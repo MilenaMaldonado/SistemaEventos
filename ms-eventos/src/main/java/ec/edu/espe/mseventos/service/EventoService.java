@@ -35,8 +35,16 @@ public class EventoService {
 
         Evento guardado = eventoRepository.save(evento);
 
-        eventoProductor.enviarEvento(new EventoColaDTO(guardado.getIdEvento(), guardado.getCapacidad(), "CREAR"));
-
+        eventoProductor.enviarEvento(new EventoColaDTO(
+                guardado.getIdEvento(),
+                guardado.getNombre(),
+                ciudad.getNombre(),
+                guardado.getEstablecimiento(),
+                guardado.getFecha(),
+                guardado.getHora(),
+                guardado.getCapacidad(),
+                "CREAR"
+        ));
         return mapToDTO(guardado);
     }
 
@@ -63,9 +71,23 @@ public class EventoService {
         Evento evento = eventoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("No existe evento con ID: " + id));
 
-        eventoRepository.delete(evento);
+        // Obtenemos la ciudad asociada
+        Ciudad ciudad = evento.getCiudad();
 
-        eventoProductor.enviarEvento(new EventoColaDTO(evento.getIdEvento(), evento.getCapacidad(), "ELIMINAR"));
+        // Enviar a la cola toda la información antes de eliminar
+        eventoProductor.enviarEvento(new EventoColaDTO(
+                evento.getIdEvento(),
+                evento.getNombre(),
+                ciudad != null ? ciudad.getNombre() : "Desconocida",
+                evento.getEstablecimiento(),
+                evento.getFecha(),
+                evento.getHora(),
+                evento.getCapacidad(),
+                "ELIMINAR"
+        ));
+
+        // Luego eliminamos
+        eventoRepository.delete(evento);
 
         return "Evento eliminado correctamente";
     }
@@ -77,6 +99,7 @@ public class EventoService {
         Ciudad ciudad = ciudadRepository.findById(dto.getIdCiudad())
                 .orElseThrow(() -> new RuntimeException("No existe ciudad con ID: " + dto.getIdCiudad()));
 
+        // Actualizar campos
         evento.setNombre(dto.getNombre());
         evento.setCiudad(ciudad);
         evento.setEstablecimiento(dto.getEstablecimiento());
@@ -85,12 +108,24 @@ public class EventoService {
         evento.setCapacidad(dto.getCapacidad());
         evento.setImagenUrl(dto.getImagenUrl());
 
+        // Guardar
         Evento actualizado = eventoRepository.save(evento);
 
-        eventoProductor.enviarEvento(new EventoColaDTO(actualizado.getIdEvento(), actualizado.getCapacidad(), "EDITAR"));
+        // Enviar evento actualizado por la cola
+        eventoProductor.enviarEvento(new EventoColaDTO(
+                actualizado.getIdEvento(),
+                actualizado.getNombre(),
+                ciudad.getNombre(),
+                actualizado.getEstablecimiento(),
+                actualizado.getFecha(),
+                actualizado.getHora(),
+                actualizado.getCapacidad(),
+                "EDITAR"
+        ));
 
         return mapToDTO(actualizado);
     }
+
 
     private EventoDTO mapToDTO(Evento evento) {
         EventoDTO dto = new EventoDTO();
