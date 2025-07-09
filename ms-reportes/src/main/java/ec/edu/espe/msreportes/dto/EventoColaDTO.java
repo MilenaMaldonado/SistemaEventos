@@ -1,4 +1,5 @@
-package ec.edu.espe.mseventos.dto;
+package ec.edu.espe.msreportes.dto;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,5 +18,5 @@ public class EventoColaDTO {
     private LocalDate fecha;
     private LocalTime hora;
     private Integer capacidad;
-    private String operacion;
+    private String operacion;  // Ejemplo: "CREAR", "EDITAR", "ELIMINAR"
 }
