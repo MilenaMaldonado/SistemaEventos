@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  bd_usuarios:
+    image: postgres:latest
+    container_name: bd_usuarios
+    environment:
+      POSTGRES_DB: bd_usuarios
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+    ports:
+      - "5433:5432"
+    volumes:
+      - usuarios_data:/var/lib/postgresql/data
+
+  bd_reportes:
+    image: postgres:latest
+    container_name: bd_reportes
+    environment:
+      POSTGRES_DB: bd_reportes
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+    ports:
+      - "5434:5432"
+    volumes:
+      - reportes_data:/var/lib/postgresql/data
+
+  bd_tikets:
+    image: postgres:latest
+    container_name: bd_tikets
+    environment:
+      POSTGRES_DB: bd_tikets
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+    ports:
+      - "5435:5432"
+    volumes:
+      - tikets_data:/var/lib/postgresql/data
+
+  bd_notificaciones:
+    image: postgres:latest
+    container_name: bd_notificaciones
+    environment:
+      POSTGRES_DB: bd_notificaciones
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+    ports:
+      - "5436:5432"
+    volumes:
+      - notificaciones_data:/var/lib/postgresql/data
+
+  bd_eventos:
+    image: postgres:latest
+    container_name: bd_eventos
+    environment:
+      POSTGRES_DB: bd_eventos
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+    ports:
+      - "5437:5432"
+    volumes:
+      - eventos_data:/var/lib/postgresql/data
+
+  bd_autenticacion:
+    image: postgres:latest
+    container_name: bd_autenticacion
+    environment:
+      POSTGRES_DB: bd_autenticacion
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+    ports:
+      - "5438:5432"
+    volumes:
+      - autenticacion_data:/var/lib/postgresql/data
+
+volumes:
+  usuarios_data:
+  reportes_data:
+  tikets_data:
+  notificaciones_data:
+  eventos_data:
+  autenticacion_data:
