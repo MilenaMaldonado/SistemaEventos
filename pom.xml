@@ -1,0 +1,20 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>ec.edu.espe</groupId>
+    <artifactId>microservicios</artifactId>
+    <version>0.0.1</version>
+    <name>Proyecto microservicios </name>
+    <description>Proyecto de microservicios </description>
+    <packaging>pom</packaging>
+    <modules>
+        <module>ms-eureka-server</module>
+        <module>ms-autenticacion</module>
+        <module>ms-eventos</module>
+        <module>ms-notificaciones</module>
+        <module>ms-eventos</module>
+        <module>ms-reportes</module>
+        <module>usuarios</module>
+        <module>apiGateway</module>
+        <module>tickets</module>
+    </modules>
+</project>

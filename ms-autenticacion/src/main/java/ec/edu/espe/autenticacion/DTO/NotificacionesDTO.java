@@ -1,4 +1,4 @@
-package ec.edu.espe.msnotificaciones.DTO;
+package ec.edu.espe.autenticacion.DTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

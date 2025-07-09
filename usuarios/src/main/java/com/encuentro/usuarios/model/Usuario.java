@@ -5,47 +5,35 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import lombok.Data;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.Date;
 
 @Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Table(name = "usuarios")
 public class Usuario {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column
+    @Column(length = 10)
     private String cedula;
 
     private String nombre;
-    private String correo;
+    private String apellido;
+    private int edad;
+
+    @Temporal(TemporalType.DATE)
+    private Date fechaNacimiento;
+
+    private String direccion;
+
+    @Column(length = 10)
     private String telefono;
-    private String contrasena;
-    private String rol;
 
-    // Getters
-    public String getCorreo() {
-        return correo;
-    }
-
-    public String getRol() {
-        return rol;
-    }
-
-    // Setters
-    public void setCorreo(String correo) {
-        this.correo = correo;
-    }
-
-    public void setRol(String rol) {
-        this.rol = rol;
-    }
-
-    public String getContrasena() {
-        return contrasena;
-    }
-
-    public void setContrasena(String contrasena) {
-        this.contrasena = contrasena;
-    }
-
+    private String correo;
 }

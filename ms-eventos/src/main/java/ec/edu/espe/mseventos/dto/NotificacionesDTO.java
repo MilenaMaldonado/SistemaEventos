@@ -1,4 +1,4 @@
-package ec.edu.espe.autenticacion.DTO;
+package ec.edu.espe.mseventos.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

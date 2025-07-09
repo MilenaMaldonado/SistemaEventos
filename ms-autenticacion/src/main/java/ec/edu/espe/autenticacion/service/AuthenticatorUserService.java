@@ -5,7 +5,7 @@ import ec.edu.espe.autenticacion.DTO.ResponseDto;
 import ec.edu.espe.autenticacion.DTO.UsuarioDTO;
 import ec.edu.espe.autenticacion.entity.AuthenticatorUser;
 import ec.edu.espe.autenticacion.entity.Role;
-import ec.edu.espe.autenticacion.productores.JwtSendProductor;
+import ec.edu.espe.autenticacion.productores.NotificacionProducer;
 import ec.edu.espe.autenticacion.productores.NuevoUsuarioProductor;
 import ec.edu.espe.autenticacion.repository.AuthenticatorUserRepositoy;
 import ec.edu.espe.autenticacion.utils.CedulaEcuatoriana;
@@ -35,14 +35,13 @@ public class AuthenticatorUserService {
     @Autowired
     private JwtService jwtUtil;
     @Autowired
-    JwtSendProductor jwtSenderService;
-
-    @Autowired
     NuevoUsuarioProductor  nuevoUsuarioProductor;
+    @Autowired
+    NotificacionProducer  notificacionProducer;
 
     private final CedulaEcuatoriana cedulaEcuatoriana = new CedulaEcuatoriana();
 
-    @Transactional
+
     public ResponseEntity<ResponseDto> register(UsuarioDTO usuarioDTO,BindingResult result) {
         try {
             //valida Usuario
@@ -100,8 +99,8 @@ public class AuthenticatorUserService {
                         .body(new ResponseDto("Contraseña Incorrecto", null));
             }
             log.info("Login exitosamente");
+            notificacionProducer.enviarNotificacion(authenticatorUserDTO);
             String token = jwtUtil.generateToken(authenticatorUser);
-            //jwtSenderService.enviarJWT(token,authenticatorUser);
             Cookie jwtCookie = new Cookie("token", token);
             jwtCookie.setHttpOnly(true);
             jwtCookie.setPath("/");

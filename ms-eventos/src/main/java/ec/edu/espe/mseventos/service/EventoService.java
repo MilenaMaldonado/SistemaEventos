@@ -2,16 +2,20 @@ package ec.edu.espe.mseventos.service;
 
 import ec.edu.espe.mseventos.dto.EventoColaDTO;
 import ec.edu.espe.mseventos.dto.EventoDTO;
+import ec.edu.espe.mseventos.dto.NotificacionesDTO;
 import ec.edu.espe.mseventos.model.Ciudad;
 import ec.edu.espe.mseventos.model.Evento;
 import ec.edu.espe.mseventos.repository.CiudadRepository;
 import ec.edu.espe.mseventos.repository.EventoRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EventoService {
@@ -19,6 +23,9 @@ public class EventoService {
     private final EventoRepository eventoRepository;
     private final CiudadRepository ciudadRepository;
     private final EventoProducer eventoProductor;
+
+    @Autowired
+    NotificacionProducer notificacionProducer;
 
     public EventoDTO crearEvento(EventoDTO dto) {
         Ciudad ciudad = ciudadRepository.findById(dto.getIdCiudad())
@@ -45,6 +52,11 @@ public class EventoService {
                 guardado.getCapacidad(),
                 "CREAR"
         ));
+        log.info("Evento creado");
+        NotificacionesDTO  notificacionesDTO = new NotificacionesDTO();
+        notificacionesDTO.setMensaje(dto.getNombre()+" creado");
+        notificacionesDTO.setTipo("EVENTO");
+        notificacionProducer.enviarNotificacion(notificacionesDTO);
         return mapToDTO(guardado);
     }
 
@@ -86,6 +98,11 @@ public class EventoService {
                 "ELIMINAR"
         ));
 
+        log.info("Evento eliminado");
+        NotificacionesDTO  notificacionesDTO = new NotificacionesDTO();
+        notificacionesDTO.setMensaje(evento.getNombre()+" eliminado");
+        notificacionesDTO.setTipo("EVENTO");
+        notificacionProducer.enviarNotificacion(notificacionesDTO);
         // Luego eliminamos
         eventoRepository.delete(evento);
 
@@ -122,6 +139,11 @@ public class EventoService {
                 actualizado.getCapacidad(),
                 "EDITAR"
         ));
+        log.info("Evento actualizado correctamente");
+        NotificacionesDTO  notificacionesDTO = new NotificacionesDTO();
+        notificacionesDTO.setMensaje(actualizado.getNombre()+" actualizado");
+        notificacionesDTO.setTipo("EVENTO");
+        notificacionProducer.enviarNotificacion(notificacionesDTO);
 
         return mapToDTO(actualizado);
     }
@@ -129,7 +151,6 @@ public class EventoService {
 
     private EventoDTO mapToDTO(Evento evento) {
         EventoDTO dto = new EventoDTO();
-        dto.setIdEvento(evento.getIdEvento());
         dto.setNombre(evento.getNombre());
         dto.setIdCiudad(evento.getCiudad().getId());
         dto.setEstablecimiento(evento.getEstablecimiento());

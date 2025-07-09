@@ -1,8 +1,7 @@
-package ec.edu.espe.mseventos.service;
+package com.encuentro.usuarios.producer;
 
+import com.encuentro.usuarios.DTO.NotificacionesDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import ec.edu.espe.mseventos.dto.NotificacionesDTO;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

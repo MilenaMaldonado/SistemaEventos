@@ -1,8 +1,8 @@
-package ec.edu.espe.autenticacion.productores;
+package ec.edu.espe.mseventos.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ec.edu.espe.autenticacion.DTO.AuthenticatorUserDTO;
-import ec.edu.espe.autenticacion.DTO.NotificacionesDTO;
+
+import ec.edu.espe.mseventos.dto.NotificacionesDTO;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,11 +15,8 @@ public class NotificacionProducer {
     @Autowired
     private ObjectMapper objectMapper;
 
-    public void enviarNotificacion(AuthenticatorUserDTO authenticatorUserDTO) {
+    public void enviarNotificacion(NotificacionesDTO notificacionesDTO) {
         try{
-            NotificacionesDTO notificacionesDTO = new NotificacionesDTO();
-            notificacionesDTO.setMensaje("ID "+authenticatorUserDTO.getCedula()+" inicia sesion");
-            notificacionesDTO.setTipo("LOGIN");
             String json = objectMapper.writeValueAsString(notificacionesDTO);
             rabbitTemplate.convertAndSend("notificaciones.cola", json);
         }catch (Exception e)

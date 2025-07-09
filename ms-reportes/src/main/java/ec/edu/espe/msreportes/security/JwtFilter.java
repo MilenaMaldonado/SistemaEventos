@@ -1,6 +1,6 @@
-package ec.edu.espe.msnotificaciones.security;
+package ec.edu.espe.msreportes.security;
 
-import ec.edu.espe.msnotificaciones.utils.JwtService;
+import ec.edu.espe.msreportes.utils.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;

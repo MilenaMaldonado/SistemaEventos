@@ -1,6 +1,6 @@
 package com.encuentro.tickets.services;
 
-import com.encuentro.tickets.model.idTicketCliente;
+import com.encuentro.tickets.model.TicketCliente;
 import com.encuentro.tickets.repository.TicketClienteRepository;
 import org.springframework.stereotype.Service;
 
@@ -15,15 +15,15 @@ public class TicketClienteService {
         this.repository = repository;
     }
 
-    public List<idTicketCliente> findAll() {
+    public List<TicketCliente> findAll() {
         return repository.findAll();
     }
 
-    public idTicketCliente save(idTicketCliente ticket) {
+    public TicketCliente save(TicketCliente ticket) {
         return repository.save(ticket);
     }
 
-    public idTicketCliente findById(Long id) {
+    public TicketCliente findById(Long id) {
         return repository.findById(id).orElse(null);
     }
 

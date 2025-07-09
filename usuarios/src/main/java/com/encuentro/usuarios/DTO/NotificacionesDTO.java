@@ -1,4 +1,4 @@
-package ec.edu.espe.msnotificaciones.DTO;
+package com.encuentro.usuarios.DTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

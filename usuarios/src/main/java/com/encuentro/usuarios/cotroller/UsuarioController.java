@@ -1,32 +1,59 @@
 package com.encuentro.usuarios.cotroller;
+
+import com.encuentro.usuarios.DTO.NotificacionesDTO;
 import com.encuentro.usuarios.model.Usuario;
-import com.encuentro.usuarios.security.JwtUtil;
+import com.encuentro.usuarios.producer.NotificacionProducer;
 import com.encuentro.usuarios.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/usuarios")
+@CrossOrigin(origins = "*")
 public class UsuarioController {
 
-    @Autowired private UsuarioService service;
-    @Autowired private JwtUtil jwtUtil;
+    @Autowired
+    private UsuarioService usuarioService;
+    @Autowired
+    private NotificacionProducer notificacionProducer;
 
-    @PostMapping("/registro")
-    public ResponseEntity<Usuario> registrar(@RequestBody Usuario u) {
-        return ResponseEntity.ok(service.registrar(u));
+    @GetMapping
+    public List<Usuario> listarUsuarios() {
+        return usuarioService.listarTodos();
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody Map<String, String> body) {
-        Usuario u = service.autenticar(body.get("correo"), body.get("contraseña"));
-        String token = jwtUtil.generarToken(u);
-        return ResponseEntity.ok(Map.of("token", token));
+    @GetMapping("/{cedula}")
+    public ResponseEntity<Usuario> obtenerUsuario(@PathVariable String cedula) {
+        return usuarioService.buscarPorCedula(cedula)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping
+    public ResponseEntity<Usuario> crearUsuario(@RequestBody Usuario usuario) {
+        return ResponseEntity.ok(usuarioService.guardar(usuario));
+    }
+
+    @PutMapping("/{cedula}")
+    public ResponseEntity<Usuario> actualizarUsuario(@PathVariable String cedula, @RequestBody Usuario usuario) {
+        return usuarioService.buscarPorCedula(cedula).map(u -> {
+            usuario.setCedula(cedula);
+            NotificacionesDTO  notificacionesDTO = new NotificacionesDTO();
+            notificacionesDTO.setMensaje("Usuario con el CI "+ usuario.getCedula()+" actualizado con exito");
+            notificacionesDTO.setTipo("USUARIO");
+            notificacionProducer.enviarNotificacion(notificacionesDTO);
+            return ResponseEntity.ok(usuarioService.guardar(usuario));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{cedula}")
+    public ResponseEntity<Void> eliminarUsuario(@PathVariable String cedula) {
+        return usuarioService.buscarPorCedula(cedula).map(u -> {
+            usuarioService.eliminar(cedula);
+            return ResponseEntity.noContent().<Void>build();
+        }).orElse(ResponseEntity.notFound().build());
     }
 }

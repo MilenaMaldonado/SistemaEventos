@@ -1,4 +1,4 @@
-package ec.edu.espe.msnotificaciones.exeptions;
+package ec.edu.espe.msreportes.exception;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

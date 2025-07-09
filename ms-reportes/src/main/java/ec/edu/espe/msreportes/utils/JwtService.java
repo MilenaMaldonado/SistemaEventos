@@ -1,10 +1,9 @@
-package ec.edu.espe.msnotificaciones.utils;
+package ec.edu.espe.msreportes.utils;
 
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.User;
@@ -12,7 +11,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
-
 import java.util.function.Function;
 
 @Slf4j

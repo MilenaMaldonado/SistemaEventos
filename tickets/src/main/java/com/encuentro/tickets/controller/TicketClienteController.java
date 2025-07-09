@@ -1,6 +1,6 @@
 package com.encuentro.tickets.controller;
 
-import com.encuentro.tickets.model.idTicketCliente;
+import com.encuentro.tickets.model.TicketCliente;
 import com.encuentro.tickets.services.TicketClienteService;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,22 +17,22 @@ public class TicketClienteController {
     }
 
     @GetMapping
-    public List<idTicketCliente> getAll() {
+    public List<TicketCliente> getAll() {
         return service.findAll();
     }
 
     @GetMapping("/{id}")
-    public idTicketCliente getById(@PathVariable Long id) {
+    public TicketCliente getById(@PathVariable Long id) {
         return service.findById(id);
     }
 
     @PostMapping
-    public idTicketCliente create(@RequestBody idTicketCliente ticket) {
+    public TicketCliente create(@RequestBody TicketCliente ticket) {
         return service.save(ticket);
     }
 
     @PutMapping("/{id}")
-    public idTicketCliente update(@PathVariable Long id, @RequestBody idTicketCliente updatedTicket) {
+    public TicketCliente update(@PathVariable Long id, @RequestBody TicketCliente updatedTicket) {
         updatedTicket.setIdTicketCliente(id);
         return service.save(updatedTicket);
     }

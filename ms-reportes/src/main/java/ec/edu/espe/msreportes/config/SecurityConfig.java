@@ -1,7 +1,8 @@
-package ec.edu.espe.msnotificaciones.config;
+package ec.edu.espe.msreportes.config;
 
-import ec.edu.espe.msnotificaciones.exeptions.CustomAccessDeniedHandler;
-import ec.edu.espe.msnotificaciones.security.JwtFilter;
+
+import ec.edu.espe.msreportes.exception.CustomAccessDeniedHandler;
+import ec.edu.espe.msreportes.security.JwtFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -36,7 +37,7 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/actuator/**"
                         ).permitAll()
-                        .requestMatchers("/api/notificaciones").hasRole("ADMINISTRADOR")
+                        .requestMatchers("/reportes").hasRole("ADMINISTRADOR")
                         .anyRequest().authenticated()
                 ) .exceptionHandling(ex -> ex
                         .accessDeniedHandler(customAccessDeniedHandler)
