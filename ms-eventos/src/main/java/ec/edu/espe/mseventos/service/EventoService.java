@@ -10,7 +10,9 @@ import ec.edu.espe.mseventos.repository.EventoRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,7 +28,11 @@ public class EventoService {
 
     @Autowired
     NotificacionProducer notificacionProducer;
+    
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
+    @Transactional
     public EventoDTO crearEvento(EventoDTO dto) {
         Ciudad ciudad = ciudadRepository.findById(dto.getIdCiudad())
                 .orElseThrow(() -> new RuntimeException("No existe ciudad con ID: " + dto.getIdCiudad()));
@@ -42,16 +48,12 @@ public class EventoService {
 
         Evento guardado = eventoRepository.save(evento);
 
-        eventoProductor.enviarEvento(new EventoColaDTO(
+        // Publicar evento para envío asíncrono después de confirmar transacción
+        EventoColaDTO eventoColaDTO = new EventoColaDTO(
                 guardado.getIdEvento(),
-                guardado.getNombre(),
-                ciudad.getNombre(),
-                guardado.getEstablecimiento(),
-                guardado.getFecha(),
-                guardado.getHora(),
-                guardado.getCapacidad(),
-                "CREAR"
-        ));
+                guardado.getCapacidad()
+        );
+        eventPublisher.publishEvent(eventoColaDTO);
         log.info("Evento creado");
         NotificacionesDTO  notificacionesDTO = new NotificacionesDTO();
         notificacionesDTO.setMensaje(dto.getNombre()+" creado");
@@ -79,6 +81,7 @@ public class EventoService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     public String eliminarEvento(Long id) {
         Evento evento = eventoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("No existe evento con ID: " + id));
@@ -86,17 +89,12 @@ public class EventoService {
         // Obtenemos la ciudad asociada
         Ciudad ciudad = evento.getCiudad();
 
-        // Enviar a la cola toda la información antes de eliminar
-        eventoProductor.enviarEvento(new EventoColaDTO(
+        // Publicar evento para envío asíncrono después de confirmar transacción
+        EventoColaDTO eventoColaDTO = new EventoColaDTO(
                 evento.getIdEvento(),
-                evento.getNombre(),
-                ciudad != null ? ciudad.getNombre() : "Desconocida",
-                evento.getEstablecimiento(),
-                evento.getFecha(),
-                evento.getHora(),
-                evento.getCapacidad(),
-                "ELIMINAR"
-        ));
+                evento.getCapacidad()
+        );
+        eventPublisher.publishEvent(eventoColaDTO);
 
         log.info("Evento eliminado");
         NotificacionesDTO  notificacionesDTO = new NotificacionesDTO();
@@ -109,6 +107,7 @@ public class EventoService {
         return "Evento eliminado correctamente";
     }
 
+    @Transactional
     public EventoDTO actualizarEvento(Long id, EventoDTO dto) {
         Evento evento = eventoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("No existe evento con ID: " + id));
@@ -128,17 +127,12 @@ public class EventoService {
         // Guardar
         Evento actualizado = eventoRepository.save(evento);
 
-        // Enviar evento actualizado por la cola
-        eventoProductor.enviarEvento(new EventoColaDTO(
+        // Publicar evento para envío asíncrono después de confirmar transacción
+        EventoColaDTO eventoColaDTO = new EventoColaDTO(
                 actualizado.getIdEvento(),
-                actualizado.getNombre(),
-                ciudad.getNombre(),
-                actualizado.getEstablecimiento(),
-                actualizado.getFecha(),
-                actualizado.getHora(),
-                actualizado.getCapacidad(),
-                "EDITAR"
-        ));
+                actualizado.getCapacidad()
+        );
+        eventPublisher.publishEvent(eventoColaDTO);
         log.info("Evento actualizado correctamente");
         NotificacionesDTO  notificacionesDTO = new NotificacionesDTO();
         notificacionesDTO.setMensaje(actualizado.getNombre()+" actualizado");

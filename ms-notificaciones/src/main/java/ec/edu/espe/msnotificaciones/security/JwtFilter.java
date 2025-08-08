@@ -40,55 +40,96 @@ public class JwtFilter extends OncePerRequestFilter {
         List<String> excludedPaths = List.of(
                 "/api/auth/**",
                 "/swagger-ui/**",
+                "/swagger-ui.html",
                 "/v3/api-docs/**",
+                "/v3/api-docs",
+                "/swagger-resources/**",
+                "/webjars/**",
                 "/actuator/**"
-
         );
 
         boolean isExcluded = excludedPaths.stream()
                 .anyMatch(pattern -> pathMatcher.match(pattern, path));
 
         if (isExcluded) {
+            log.debug("Path excluido del filtro JWT: {}", path);
             filterChain.doFilter(request, response);
             return;
         }
 
         // Buscar token en header o cookie
-        String authHeader = request.getHeader("Authorization");
-        String token = null;
+        String token = extractToken(request);
 
+        log.info("Token extraído: {}", token != null ? "presente" : "ausente");
+        log.debug("Valor del token: {}", token);
+
+        if (token == null || token.trim().isEmpty()) {
+            log.warn("Token ausente para la ruta: {}", path);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\": \"Acceso no autorizado: token ausente\"}");
+            return;
+        }
+
+        if (!jwtService.isTokenValid(token)) {
+            log.warn("Token inválido para la ruta: {}", path);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\": \"Acceso no autorizado: token inválido\"}");
+            return;
+        }
+
+        try {
+            // Extraer datos del token
+            String username = jwtService.extractUsername(token);
+            String role = jwtService.extractClaim(token, claims -> claims.get("role", String.class));
+
+            log.debug("Username extraído: {}", username);
+            log.debug("Role extraído: {}", role);
+
+            if (username != null && role != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                SimpleGrantedAuthority authority = new SimpleGrantedAuthority(role);
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        username,
+                        null,
+                        Collections.singletonList(authority)
+                );
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+
+                log.debug("Autenticación establecida para usuario: {} con rol: {}", username, role);
+            }
+        } catch (Exception e) {
+            log.error("Error al procesar el token JWT: {}", e.getMessage());
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\": \"Acceso no autorizado: token corrupto\"}");
+            return;
+        }
+
+        filterChain.doFilter(request, response);
+    }
+
+    private String extractToken(HttpServletRequest request) {
+        // Primero intentar obtener del header Authorization
+        String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            token = authHeader.substring(7);
-        } else if (request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
+            log.debug("Token encontrado en header Authorization");
+            return authHeader.substring(7);
+        }
+
+        // Si no está en el header, buscar en las cookies
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
                 if ("token".equals(cookie.getName())) {
-                    token = cookie.getValue();
-                    break;
+                    log.debug("Token encontrado en cookie: {}", cookie.getName());
+                    return cookie.getValue();
                 }
             }
         }
 
-        if (token == null || !jwtService.isTokenValid(token)) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Acceso no autorizado: token inválido o ausente");
-            return;
-        }
-
-        // Extraer datos del token
-        String username = jwtService.extractUsername(token);
-        String role = jwtService.extractClaim(token, claims -> claims.get("role", String.class)); // ← Asegúrate que exista este claim
-
-        if (username != null && role != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            SimpleGrantedAuthority authority = new SimpleGrantedAuthority(role); // ← aquí debe venir ROLE_CLIENTE
-            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                    username,
-                    null,
-                    Collections.singletonList(authority)
-            );
-            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authToken);
-        }
-
-        filterChain.doFilter(request, response);
+        log.debug("No se encontró token en header ni en cookies");
+        return null;
     }
 }

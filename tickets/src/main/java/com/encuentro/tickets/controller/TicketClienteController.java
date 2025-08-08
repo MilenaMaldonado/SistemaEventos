@@ -1,7 +1,13 @@
 package com.encuentro.tickets.controller;
 
+import com.encuentro.tickets.dto.ResponseDto;
+import com.encuentro.tickets.dto.TicketClienteDTO;
 import com.encuentro.tickets.model.TicketCliente;
 import com.encuentro.tickets.services.TicketClienteService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,28 +23,71 @@ public class TicketClienteController {
     }
 
     @GetMapping
-    public List<TicketCliente> getAll() {
-        return service.findAll();
+    public ResponseEntity<ResponseDto> getAll() {
+        List<TicketCliente> tickets = service.findAll();
+        return ResponseEntity.ok(new ResponseDto("Tickets obtenidos exitosamente", tickets));
     }
 
     @GetMapping("/{id}")
-    public TicketCliente getById(@PathVariable Long id) {
-        return service.findById(id);
+    public ResponseEntity<ResponseDto> getById(@PathVariable Long id) {
+        TicketCliente ticket = service.findById(id);
+        if (ticket != null) {
+            return ResponseEntity.ok(new ResponseDto("Ticket encontrado", ticket));
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ResponseDto("Ticket no encontrado", null));
+        }
     }
 
     @PostMapping
-    public TicketCliente create(@RequestBody TicketCliente ticket) {
-        return service.save(ticket);
+    public ResponseEntity<ResponseDto> create(@Valid @RequestBody TicketClienteDTO ticketDTO, BindingResult result) {
+        if (result.hasErrors()) {
+            return ResponseEntity.badRequest().body(new ResponseDto("Errores de validación", result.getAllErrors()));
+        }
+        
+        TicketCliente ticket = new TicketCliente();
+        ticket.setFechaEmision(ticketDTO.getFechaEmision());
+        ticket.setCedula(ticketDTO.getCedula());
+        ticket.setMetodoPago(ticketDTO.getMetodoPago());
+        ticket.setPrecioUnitarioTicket(ticketDTO.getPrecioUnitarioTicket());
+        ticket.setCantidad(ticketDTO.getCantidad());
+        ticket.setSubtotal(ticketDTO.getSubtotal());
+        ticket.setIva(ticketDTO.getIva());
+        ticket.setTotal(ticketDTO.getTotal());
+        
+        TicketCliente creado = service.save(ticket);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ResponseDto("Ticket creado exitosamente", creado));
     }
 
     @PutMapping("/{id}")
-    public TicketCliente update(@PathVariable Long id, @RequestBody TicketCliente updatedTicket) {
-        updatedTicket.setIdTicketCliente(id);
-        return service.save(updatedTicket);
+    public ResponseEntity<ResponseDto> update(@PathVariable Long id, @Valid @RequestBody TicketClienteDTO ticketDTO, BindingResult result) {
+        if (result.hasErrors()) {
+            return ResponseEntity.badRequest().body(new ResponseDto("Errores de validación", result.getAllErrors()));
+        }
+        
+        TicketCliente ticket = new TicketCliente();
+        ticket.setIdTicketCliente(id);
+        ticket.setFechaEmision(ticketDTO.getFechaEmision());
+        ticket.setCedula(ticketDTO.getCedula());
+        ticket.setMetodoPago(ticketDTO.getMetodoPago());
+        ticket.setPrecioUnitarioTicket(ticketDTO.getPrecioUnitarioTicket());
+        ticket.setCantidad(ticketDTO.getCantidad());
+        ticket.setSubtotal(ticketDTO.getSubtotal());
+        ticket.setIva(ticketDTO.getIva());
+        ticket.setTotal(ticketDTO.getTotal());
+        
+        TicketCliente actualizado = service.save(ticket);
+        return ResponseEntity.ok(new ResponseDto("Ticket actualizado exitosamente", actualizado));
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        service.delete(id);
+    public ResponseEntity<ResponseDto> delete(@PathVariable Long id) {
+        try {
+            service.delete(id);
+            return ResponseEntity.ok(new ResponseDto("Ticket eliminado exitosamente", null));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ResponseDto("Ticket no encontrado para eliminar", null));
+        }
     }
 }

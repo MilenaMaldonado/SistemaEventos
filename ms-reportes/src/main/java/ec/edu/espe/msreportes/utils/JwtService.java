@@ -16,7 +16,7 @@ import java.util.function.Function;
 @Slf4j
 @Service
 public class JwtService {
-    private final String SECRET_KEY = "claveSecreta123456789012345678901234567890"; // mínimo 32 caracteres
+    private final String SECRET_KEY = "soyUnaClave123456789123456789123456789"; // mínimo 32 caracteres
 
     private final long EXPIRATION = 1000 * 60 * 60; // 1 hora
 
