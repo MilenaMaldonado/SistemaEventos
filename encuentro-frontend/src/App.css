@@ -1,3 +1,9 @@
+/* Fondo global para login y register */
+.auth-bg {
+  background: url('/concert-bg.jpg') no-repeat center center fixed;
+  background-size: cover;
+  filter: brightness(0.5);
+}
 .App {
   text-align: center;
 }

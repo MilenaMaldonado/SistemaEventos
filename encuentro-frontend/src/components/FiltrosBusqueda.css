@@ -1,0 +1,26 @@
+.filtros-busqueda {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  align-items: center;
+  margin: 32px 0 24px 0;
+}
+
+.busqueda-input {
+  padding: 10px 18px;
+  border-radius: 6px;
+  border: 1px solid #00b4d8;
+  font-size: 1rem;
+  width: 220px;
+  background: #1a2233;
+  color: #fff;
+}
+
+.filtro-select {
+  padding: 10px 14px;
+  border-radius: 6px;
+  border: 1px solid #00b4d8;
+  font-size: 1rem;
+  background: #fff;
+  color: #00b4d8;
+}

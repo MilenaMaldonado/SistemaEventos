@@ -1,0 +1,33 @@
+.info-pago-seguridad {
+  background: #1a2233;
+  padding: 32px 0;
+  text-align: center;
+  margin: 48px 0 0 0;
+  color: #fff;
+}
+
+.info-pago-seguridad h3 {
+  color: #00b4d8;
+  font-size: 1.5rem;
+  margin-bottom: 18px;
+}
+
+.info-icons {
+  display: flex;
+  justify-content: center;
+  gap: 48px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 1.1rem;
+  color: #fff;
+}
+
+.info-item span {
+  font-size: 2.2rem;
+  margin-bottom: 8px;
+  color: #00b4d8;
+}
