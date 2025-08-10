@@ -1,0 +1,422 @@
+.asiento-selector-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.asientos-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.asientos-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.capacidad-info {
+  margin: 5px 0 0 0;
+  color: #6c757d;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.connection-status {
+  font-size: 0.9rem;
+}
+
+.connected {
+  color: #28a745;
+  font-weight: 500;
+}
+
+.disconnected {
+  color: #dc3545;
+  font-weight: 500;
+}
+
+/* Leyenda de estados */
+.asientos-leyenda {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 25px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+
+.leyenda-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.leyenda-item .asiento {
+  margin: 0;
+}
+
+/* Contenedor del venue */
+.venue-container {
+  margin-bottom: 25px;
+  padding: 20px;
+  background-color: #fff;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.escenario {
+  text-align: center;
+  background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+  color: white;
+  padding: 15px;
+  margin-bottom: 30px;
+  border-radius: 25px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.asientos-venue {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.fila-asientos {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
+  justify-content: center;
+}
+
+.fila-label {
+  font-weight: bold;
+  color: #495057;
+  font-size: 1rem;
+  min-width: 60px;
+  text-align: center;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.asientos-fila {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Estilos base del asiento */
+.asiento {
+  width: 50px;
+  height: 50px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.asiento:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.asiento:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Estados específicos de asientos */
+.asiento.disponible {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  border-color: #1e7e34;
+}
+
+.asiento.disponible:hover {
+  background: linear-gradient(135deg, #218838 0%, #1ea580 100%);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+}
+
+.asiento.seleccionado-propio {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  color: white;
+  border-color: #0056b3;
+  animation: pulse 2s infinite;
+}
+
+.asiento.seleccionado-propio:hover {
+  background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+}
+
+.asiento.seleccionado-otro {
+  background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+  color: #212529;
+  border-color: #d39e00;
+  cursor: not-allowed;
+}
+
+.asiento.reservado {
+  background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+  color: white;
+  border-color: #5a32a3;
+  cursor: not-allowed;
+}
+
+.asiento.vendido {
+  background: linear-gradient(135deg, #dc3545 0%, #b02a37 100%);
+  color: white;
+  border-color: #a71e2a;
+  cursor: not-allowed;
+  position: relative;
+}
+
+.asiento.vendido::after {
+  content: '✓';
+  position: absolute;
+  font-size: 0.8rem;
+  top: -5px;
+  right: -5px;
+  background: white;
+  color: #dc3545;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.asiento:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Animación de pulso para asientos seleccionados */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(0, 123, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
+  }
+}
+
+/* Resumen de selección */
+.seleccion-resumen {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 2px solid #dee2e6;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.seleccion-resumen h4 {
+  margin: 0 0 15px 0;
+  color: #495057;
+  font-size: 1.2rem;
+}
+
+.resumen-detalle p {
+  margin: 8px 0;
+  color: #6c757d;
+  font-size: 0.95rem;
+}
+
+.resumen-detalle p:last-child {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #28a745;
+  border-top: 1px solid #dee2e6;
+  padding-top: 10px;
+  margin-top: 10px;
+}
+
+/* Acciones de compra */
+.compra-actions {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.btn-comprar {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+  min-width: 200px;
+}
+
+.btn-comprar:hover:not(:disabled) {
+  background: linear-gradient(135deg, #218838 0%, #1ea580 100%);
+  box-shadow: 0 6px 12px rgba(40, 167, 69, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-comprar:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+}
+
+.btn-comprar:disabled {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+  cursor: not-allowed;
+  opacity: 0.7;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Estados de carga y error */
+.loading-indicator {
+  text-align: center;
+  padding: 40px;
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-message {
+  text-align: center;
+  padding: 40px;
+  color: #dc3545;
+}
+
+.retry-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.2s;
+}
+
+.retry-button:hover {
+  background-color: #0056b3;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .asiento-selector-container {
+    padding: 15px;
+  }
+  
+  .asientos-header {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+  
+  .asientos-leyenda {
+    justify-content: center;
+  }
+  
+  .venue-container {
+    padding: 15px;
+  }
+  
+  .fila-asientos {
+    gap: 10px;
+  }
+  
+  .fila-label {
+    min-width: 50px;
+    font-size: 0.9rem;
+    padding: 6px 10px;
+  }
+  
+  .asientos-fila {
+    gap: 6px;
+  }
+  
+  .asiento {
+    width: 45px;
+    height: 45px;
+    font-size: 0.8rem;
+  }
+  
+  .escenario {
+    font-size: 1rem;
+    padding: 12px;
+    margin-bottom: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .asientos-leyenda {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .fila-asientos {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .fila-label {
+    min-width: auto;
+    width: 100%;
+    margin-bottom: 5px;
+  }
+  
+  .asientos-fila {
+    gap: 4px;
+  }
+  
+  .asiento {
+    width: 40px;
+    height: 40px;
+    font-size: 0.7rem;
+  }
+  
+  .escenario {
+    font-size: 0.9rem;
+    padding: 10px;
+  }
+}

@@ -45,19 +45,53 @@
   text-align: center;
 }
 
-.evento-btn {
-  background: #00b4d8;
-  color: #fff;
-  border: none;
-  padding: 10px 28px;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 600;
-  margin-top: 12px;
-  cursor: pointer;
-  transition: background 0.2s;
+.evento-precio {
+  font-weight: bold;
+  color: #00b4d8 !important;
+  font-size: 1.1rem;
+  margin: 8px 0;
 }
 
-.evento-btn:hover {
+.evento-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.evento-btn {
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex: 1;
+  min-width: 120px;
+}
+
+.evento-btn-detalles {
+  background: transparent;
+  color: #00b4d8;
+  border: 2px solid #00b4d8;
+}
+
+.evento-btn-detalles:hover {
+  background: #00b4d8;
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.evento-btn-comprar {
+  background: #00b4d8;
+  color: #fff;
+  border: 2px solid #00b4d8;
+}
+
+.evento-btn-comprar:hover {
   background: #0077b6;
+  border-color: #0077b6;
+  transform: translateY(-2px);
 }
