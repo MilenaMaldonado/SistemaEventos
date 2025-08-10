@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitMQConfig {
-    public static final String COLA_EVENTOS = "eventos.cola";
+    public static final String COLA_EVENTOS = "eventosReporte.cola";
     public static final String COLA_TICKETS = "tickets.cola";
 
     @Bean

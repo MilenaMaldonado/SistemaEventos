@@ -5,10 +5,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-public class EventoColaDTO {
-    private Long idEvento;
-    private Integer capacidad;
-    private String operacion;
+@NoArgsConstructor
+public class NotificacionesDTO {
+    private String mensaje;
+    private String tipo;
 }

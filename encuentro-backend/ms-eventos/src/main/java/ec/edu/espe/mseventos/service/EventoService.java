@@ -24,13 +24,13 @@ public class EventoService {
 
     private final EventoRepository eventoRepository;
     private final CiudadRepository ciudadRepository;
-    private final EventoProducer eventoProductor;
+
+    @Autowired
+    EventoProducer eventoProductor;
 
     @Autowired
     NotificacionProducer notificacionProducer;
-    
-    @Autowired
-    private ApplicationEventPublisher eventPublisher;
+
 
     @Transactional
     public EventoDTO crearEvento(EventoDTO dto) {
@@ -51,9 +51,11 @@ public class EventoService {
         // Publicar evento para envío asíncrono después de confirmar transacción
         EventoColaDTO eventoColaDTO = new EventoColaDTO(
                 guardado.getIdEvento(),
-                guardado.getCapacidad()
+                guardado.getCapacidad(),
+                "CREAR"
         );
-        eventPublisher.publishEvent(eventoColaDTO);
+
+        eventoProductor.enviarEvento(eventoColaDTO);
         log.info("Evento creado");
         NotificacionesDTO  notificacionesDTO = new NotificacionesDTO();
         notificacionesDTO.setMensaje(dto.getNombre()+" creado");
@@ -92,9 +94,10 @@ public class EventoService {
         // Publicar evento para envío asíncrono después de confirmar transacción
         EventoColaDTO eventoColaDTO = new EventoColaDTO(
                 evento.getIdEvento(),
-                evento.getCapacidad()
+                evento.getCapacidad(),
+                "ELIMINAR"
         );
-        eventPublisher.publishEvent(eventoColaDTO);
+        eventoProductor.enviarEvento(eventoColaDTO);
 
         log.info("Evento eliminado");
         NotificacionesDTO  notificacionesDTO = new NotificacionesDTO();
@@ -130,9 +133,10 @@ public class EventoService {
         // Publicar evento para envío asíncrono después de confirmar transacción
         EventoColaDTO eventoColaDTO = new EventoColaDTO(
                 actualizado.getIdEvento(),
-                actualizado.getCapacidad()
+                actualizado.getCapacidad(),
+                "ACTUALIZAR"
         );
-        eventPublisher.publishEvent(eventoColaDTO);
+        eventoProductor.enviarEvento(eventoColaDTO);
         log.info("Evento actualizado correctamente");
         NotificacionesDTO  notificacionesDTO = new NotificacionesDTO();
         notificacionesDTO.setMensaje(actualizado.getNombre()+" actualizado");
@@ -145,6 +149,7 @@ public class EventoService {
 
     private EventoDTO mapToDTO(Evento evento) {
         EventoDTO dto = new EventoDTO();
+        dto.setIdEvento(evento.getIdEvento());
         dto.setNombre(evento.getNombre());
         dto.setIdCiudad(evento.getCiudad().getId());
         dto.setEstablecimiento(evento.getEstablecimiento());

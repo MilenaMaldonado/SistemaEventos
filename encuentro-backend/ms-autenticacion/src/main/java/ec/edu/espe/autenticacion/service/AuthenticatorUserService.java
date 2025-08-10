@@ -11,6 +11,7 @@ import ec.edu.espe.autenticacion.repository.AuthenticatorUserRepositoy;
 import ec.edu.espe.autenticacion.utils.CedulaEcuatoriana;
 import ec.edu.espe.autenticacion.utils.JwtService;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -90,12 +91,12 @@ public class AuthenticatorUserService {
             //Valida Cedula
             cedulaEcuatoriana.validarCedula(authenticatorUserDTO.getCedula());
             if (!authenticatorUserRepositoy.existsById(authenticatorUserDTO.getCedula())) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(new ResponseDto("Usuario no encontrado", "Cedula: " + authenticatorUserDTO.getCedula()));
             }
             AuthenticatorUser authenticatorUser = authenticatorUserRepositoy.findById(authenticatorUserDTO.getCedula()).get();
             if (!passwordEncoder.matches(authenticatorUserDTO.getPassword(), authenticatorUser.getPASSWORD())) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(new ResponseDto("Contraseña Incorrecto", null));
             }
             log.info("Login exitosamente");
@@ -129,5 +130,28 @@ public class AuthenticatorUserService {
     }
     private ResponseEntity<ResponseDto> buildResponse(HttpStatus status, String message, Object data) {
         return ResponseEntity.status(status).body(new ResponseDto(message, data));
+    }
+    public ResponseEntity<ResponseDto> logout(HttpServletRequest request, HttpServletResponse response) {
+        try {
+            Cookie[] cookies = request.getCookies();
+            if (cookies != null) {
+                for (Cookie cookie : cookies) {
+                    if ("token".equals(cookie.getName())) {
+                        Cookie jwtCookie = new Cookie("token", "");
+                        jwtCookie.setHttpOnly(true);
+                        jwtCookie.setPath("/");
+                        jwtCookie.setMaxAge(0);
+                        response.addCookie(jwtCookie);
+                        break;
+                    }
+                }
+            }
+            log.info("Logout exitoso");
+            return ResponseEntity.ok(new ResponseDto("Logout exitoso", null));
+        } catch (Exception e) {
+            log.error("Error durante el logout: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ResponseDto("Error al procesar logout", null));
+        }
     }
 }

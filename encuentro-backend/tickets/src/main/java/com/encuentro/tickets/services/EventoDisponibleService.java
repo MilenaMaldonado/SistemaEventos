@@ -30,4 +30,8 @@ public class EventoDisponibleService {
     public void delete(Long id) {
         repository.deleteById(id);
     }
+    
+    public void deleteById(Long id) {
+        repository.deleteById(id);
+    }
 }

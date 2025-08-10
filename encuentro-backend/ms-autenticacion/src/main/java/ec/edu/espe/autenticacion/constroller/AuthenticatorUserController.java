@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,5 +46,15 @@ public class AuthenticatorUserController {
     })
     public  ResponseEntity<ResponseDto> login(@Valid @RequestBody AuthenticatorUserDTO authenticatorUserDTO, BindingResult result, HttpServletResponse response) {
         return authenticatorUserService.login(authenticatorUserDTO,result,response);
+    }
+
+    @PostMapping("/logout")
+    @Operation(summary = "Cerrar sesión", description = "Invalida el token JWT y cierra la sesión del usuario")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Logout exitoso"),
+        @ApiResponse(responseCode = "400", description = "Error al procesar logout")
+    })
+    public ResponseEntity<ResponseDto> logout(HttpServletRequest request, HttpServletResponse response) {
+        return authenticatorUserService.logout(request, response);
     }
 }

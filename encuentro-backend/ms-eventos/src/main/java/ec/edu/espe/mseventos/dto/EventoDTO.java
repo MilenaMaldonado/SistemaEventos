@@ -8,6 +8,8 @@ import java.time.LocalTime;
 
 @Data
 public class EventoDTO {
+    private Long idEvento;
+    
     @NotBlank(message = "El nombre del evento es obligatorio")
     private String nombre;
     

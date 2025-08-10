@@ -1,5 +1,6 @@
 package ec.edu.espe.apigateway.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
@@ -9,6 +10,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 
+@Slf4j
 @RestController
 @CrossOrigin(origins = "*")
 public class SwaggerController {
@@ -56,32 +58,29 @@ public class SwaggerController {
                 <div class="container">
                     <h1>🌐 API Gateway - Sistema de Eventos</h1>
                     <p>La documentación Swagger está disponible a través de las siguientes opciones:</p>
-                    
                     <div class="option">
                         <h3>📋 Opción 1: Swagger Editor Online</h3>
                         <p>1. Ve a <a href="https://editor.swagger.io/" target="_blank">https://editor.swagger.io/</a></p>
                         <p>2. Carga la URL de documentación:</p>
                         <div class="code">http://localhost:8000/v3/api-docs</div>
                     </div>
-                    
                     <div class="option">
                         <h3>🔗 Opción 2: Documentación JSON directa</h3>
                         <p><a href="/v3/api-docs" target="_blank">Ver documentación completa en JSON</a></p>
                         <p>Contiene todos los endpoints de los microservicios agregados</p>
                     </div>
-                    
                     <div class="option">
                         <h3>💡 Opción 3: Microservicios individuales</h3>
                         <p>Cada microservicio tiene su propia interfaz Swagger:</p>
                         <ul>
-                            <li>ms-autenticacion: <code>http://localhost:[puerto]/swagger-ui.html</code></li>
-                            <li>ms-eventos: <code>http://localhost:[puerto]/swagger-ui.html</code></li>
-                            <li>ms-reportes: <code>http://localhost:[puerto]/swagger-ui.html</code></li>
-                            <li>ms-notificaciones: <code>http://localhost:[puerto]/swagger-ui.html</code></li>
-                            <li>tickets: <code>http://localhost:[puerto]/swagger-ui.html</code></li>
+                            <li>Autenticacion: <code>http://localhost:[puerto]/swagger-ui.html</code></li>
+                            <li>Eventos: <code>http://localhost:[puerto]/swagger-ui.html</code></li>
+                            <li>Reportes: <code>http://localhost:[puerto]/swagger-ui.html</code></li>
+                            <li>Notificaciones: <code>http://localhost:[puerto]/swagger-ui.html</code></li>
+                            <li>Tickets: <code>http://localhost:[puerto]/swagger-ui.html</code></li>
+                            <li>Usuarios: <code>http://localhost:[puerto]/swagger-ui.html</code></li>
                         </ul>
                     </div>
-                    
                     <div class="option">
                         <h3>🔍 Opción 4: Información de servicios</h3>
                         <p><a href="/health-services">Ver servicios disponibles y sus estados</a></p>
@@ -141,10 +140,11 @@ public class SwaggerController {
             "SERVICIO-EVENTOS", "/api/ms-eventos", 
             "SERVICIO-REPORTES", "/api/ms-reportes",
             "ms-notificaciones", "/api/ms-notificaciones",
-            "microservicio-tickets", "/api/ms-tickets"
+            "microservicio-tickets", "/api/ms-tickets",
+                "ms-usuarios","/api/ms-usuarios"
         );
         
-        System.out.println("=== Iniciando agregación de documentación Swagger ===");
+        log.info("=== Iniciando agregación de documentación Swagger ===");
         
         services.forEach((serviceName, prefix) -> {
             try {
@@ -152,27 +152,27 @@ public class SwaggerController {
                 if (!instances.isEmpty()) {
                     ServiceInstance instance = instances.get(0);
                     String apiDocsUrl = "http://" + instance.getHost() + ":" + instance.getPort() + "/v3/api-docs";
-                    
-                    System.out.println("Obteniendo docs de " + serviceName + " desde: " + apiDocsUrl);
+
+                    log.info("Obteniendo docs de {} desde: {}", serviceName, apiDocsUrl);
                     
                     Map<String, Object> serviceApiDocs = restTemplate.getForObject(apiDocsUrl, Map.class);
                     if (serviceApiDocs != null) {
                         processServiceApiDocs(serviceApiDocs, prefix, allPaths, allSchemas, allSecuritySchemes);
-                        System.out.println("✅ Documentación agregada para " + serviceName);
+                        log.info("✅ Documentación agregada para {}", serviceName);
                     } else {
-                        System.out.println("❌ Sin documentación para " + serviceName);
+                        log.error("❌ Sin documentación para {}",serviceName);
                     }
                 } else {
-                    System.out.println("❌ No se encontraron instancias para: " + serviceName);
+                    log.error("❌ No se encontraron instancias para: {}", serviceName);
                     addFallbackPaths(serviceName, prefix, allPaths);
                 }
             } catch (Exception e) {
-                System.err.println("❌ Error obteniendo docs para " + serviceName + ": " + e.getMessage());
+                log.error("❌ Error obteniendo docs para {}: {}", serviceName, e.getMessage());
                 addFallbackPaths(serviceName, prefix, allPaths);
             }
         });
-        
-        System.out.println("Total de paths agregados: " + allPaths.size());
+
+        log.info("Total de paths agregados: {}", allPaths.size());
         
         if (allPaths.isEmpty()) {
             // Si no hay paths, agregar algunos básicos
@@ -244,7 +244,7 @@ public class SwaggerController {
             paths.forEach((path, pathItem) -> {
                 allPaths.put(prefix + path, pathItem);
             });
-            System.out.println("Agregados " + paths.size() + " paths con prefijo " + prefix);
+            log.info("Agregados {} paths con prefijo {}", paths.size(), prefix);
         }
         
         // Procesar components
@@ -263,11 +263,12 @@ public class SwaggerController {
     }
     
     private void addFallbackPaths(String serviceName, String prefix, Map<String, Object> allPaths) {
-        System.out.println("Agregando paths de respaldo para " + serviceName);
+        log.info("Agregando paths de respaldo para {}", serviceName);
         switch (serviceName) {
             case "ms-autenticacion":
                 addBasicPath(allPaths, prefix + "/api/auth/login", "post", "Login de usuario", "Autenticación");
                 addBasicPath(allPaths, prefix + "/api/auth/register", "post", "Registro de usuario", "Autenticación");
+                addBasicPath(allPaths, prefix + "/api/auth/logout", "post", "Cerrar Session", "Autenticación");
                 break;
             case "SERVICIO-EVENTOS":
                 addBasicPath(allPaths, prefix + "/api/eventos", "get", "Listar eventos", "Eventos");
@@ -285,6 +286,13 @@ public class SwaggerController {
                 addBasicPath(allPaths, prefix + "/api/tickets-clientes", "get", "Listar tickets", "Tickets");
                 addBasicPath(allPaths, prefix + "/api/categorias-tickets", "get", "Listar categorías", "Tickets");
                 break;
+            case "ms-usuarios":
+                addBasicPath(allPaths, prefix + "/api/ms-usuarios", "get", "Obtener Usuarios", "usuarios");
+                addBasicPath(allPaths, prefix + "/api/ms-usuarios", "post", "Crear Usuario", "usuarios");
+                addBasicPath(allPaths, prefix + "/api/ms-usuarios", "put", "Editar Usuario", "usuarios");
+                addBasicPath(allPaths, prefix + "/api/ms-usuarios", "delete", "Eliminar Usuario", "usuarios");
+                break;
+
         }
     }
     
@@ -296,6 +304,7 @@ public class SwaggerController {
         addBasicPath(allPaths, "/api/ms-reportes/api/reportes", "get", "Listar reportes", "Reportes");
         addBasicPath(allPaths, "/api/ms-notificaciones/api/notificaciones", "get", "Listar notificaciones", "Notificaciones");
         addBasicPath(allPaths, "/api/ms-tickets/api/tickets-clientes", "get", "Listar tickets", "Tickets");
+        addBasicPath(allPaths, "/api/ms-usuarios/api/usuarios", "get", "Listar Usuarios", "Usuarios");
     }
     
     private void addBasicPath(Map<String, Object> allPaths, String path, String method, String summary, String tag) {

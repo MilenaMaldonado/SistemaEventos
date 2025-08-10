@@ -2,9 +2,11 @@ package ec.edu.espe.msreportes.listener;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ec.edu.espe.msreportes.dto.EventoColaDTO;
+import ec.edu.espe.msreportes.dto.NotificacionesDTO;
 import ec.edu.espe.msreportes.model.EventoVentas;
 import ec.edu.espe.msreportes.model.ReporteVentas;
 import ec.edu.espe.msreportes.repository.ReporteVentasRepository;
+import ec.edu.espe.msreportes.service.NotificacionProducer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
@@ -18,8 +20,9 @@ public class EventoListener {
 
     private final ObjectMapper objectMapper;
     private final ReporteVentasRepository reporteVentasRepository;
+    private final NotificacionProducer notificacionProducer;
 
-    @RabbitListener(queues = "eventos.cola")
+    @RabbitListener(queues = "eventosReporte.cola")
     public void recibirEvento(String mensajeJson) {
         try {
             EventoColaDTO eventoDTO = objectMapper.readValue(mensajeJson, EventoColaDTO.class);
@@ -54,6 +57,12 @@ public class EventoListener {
 
         reporteVentasRepository.save(reporte);
         System.out.println("Evento creado en reporte: " + dto.getNombre());
+        
+        NotificacionesDTO notificacion = new NotificacionesDTO(
+                "Evento agregado al reporte: " + dto.getNombre(),
+                "REPORTES"
+        );
+        notificacionProducer.enviarNotificacion(notificacion);
     }
 
     private void manejarEditar(EventoColaDTO dto) {
@@ -80,6 +89,12 @@ public class EventoListener {
             }
             reporteVentasRepository.save(reporte);
             System.out.println("Evento editado en reporte: " + dto.getNombre());
+            
+            NotificacionesDTO notificacion = new NotificacionesDTO(
+                    "Evento actualizado en reporte: " + dto.getNombre(),
+                    "REPORTES"
+            );
+            notificacionProducer.enviarNotificacion(notificacion);
         } else {
             manejarCrear(dto);
         }
@@ -94,6 +109,12 @@ public class EventoListener {
             if (removed) {
                 reporteVentasRepository.save(reporte);
                 System.out.println("Evento eliminado de reporte: ID " + idEvento);
+                
+                NotificacionesDTO notificacion = new NotificacionesDTO(
+                        "Evento eliminado del reporte: ID " + idEvento,
+                        "REPORTES"
+                );
+                notificacionProducer.enviarNotificacion(notificacion);
                 break;
             }
         }

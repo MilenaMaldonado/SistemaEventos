@@ -1,6 +1,7 @@
-package ec.edu.espe.mseventos.security;
+package com.encuentro.usuarios.security;
 
-import ec.edu.espe.mseventos.utils.JwtService;
+
+import com.encuentro.usuarios.utils.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;

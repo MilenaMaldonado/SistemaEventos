@@ -1,13 +1,14 @@
-package ec.edu.espe.mseventos.config;
+package com.encuentro.usuarios.config;
 
-import ec.edu.espe.mseventos.exeptions.CustomAccessDeniedHandler;
-import ec.edu.espe.mseventos.security.CustomAuthEntryPoint;
-import ec.edu.espe.mseventos.security.JwtFilter;
+
+import com.encuentro.usuarios.exeptions.CustomAccessDeniedHandler;
+import com.encuentro.usuarios.security.CustomAuthEntryPoint;
+import com.encuentro.usuarios.security.JwtFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod; // <-- ESTE es el import
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -48,14 +49,7 @@ public class SecurityConfig {
 
                         // Preflight CORS
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
-                        // ---- PÚBLICO (no pide JWT)
-                        .requestMatchers(HttpMethod.GET, "/api/eventos/**", "api/ciudades/**").permitAll()
-
-                        // ---- PROTEGIDO (sí pide JWT)
-                        .requestMatchers(HttpMethod.POST, "/api/eventos/**", "api/ciudades/**").hasRole("ADMINISTRADOR")
-                        .requestMatchers(HttpMethod.PUT,  "/api/eventos/**", "apí/ciudades/**").hasRole("ADMINISTRADOR")
-                        .requestMatchers(HttpMethod.DELETE,"/api/eventos/**", "api/ciudades/**").hasRole("ADMINISTRADOR")
+                        .requestMatchers("/api/notificaciones").hasRole("ADMINISTRADOR")
 
                         // Cualquier otra ruta: autenticada
                         .anyRequest().authenticated()
