@@ -12,7 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/usuarios")
-@CrossOrigin(origins = "*")
+// @CrossOrigin removido - CORS se maneja en API Gateway
 public class UsuarioController {
 
     @Autowired

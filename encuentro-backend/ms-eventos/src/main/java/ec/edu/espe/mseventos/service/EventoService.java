@@ -45,6 +45,7 @@ public class EventoService {
         evento.setHora(dto.getHora());
         evento.setCapacidad(dto.getCapacidad());
         evento.setImagenUrl(dto.getImagenUrl());
+        evento.setPrecio(dto.getPrecio());
 
         Evento guardado = eventoRepository.save(evento);
 
@@ -126,6 +127,7 @@ public class EventoService {
         evento.setHora(dto.getHora());
         evento.setCapacidad(dto.getCapacidad());
         evento.setImagenUrl(dto.getImagenUrl());
+        evento.setPrecio(dto.getPrecio());
 
         // Guardar
         Evento actualizado = eventoRepository.save(evento);
@@ -157,6 +159,7 @@ public class EventoService {
         dto.setHora(evento.getHora());
         dto.setCapacidad(evento.getCapacidad());
         dto.setImagenUrl(evento.getImagenUrl());
+        dto.setPrecio(evento.getPrecio());
         return dto;
     }
 }

@@ -7,6 +7,12 @@ import java.time.LocalDate;
 @Data
 public class TicketClienteDTO {
     
+    @NotNull(message = "El ID del evento es obligatorio")
+    private Long idEvento;
+    
+    @NotNull(message = "El número del asiento es obligatorio")
+    private Integer numeroAsiento;
+    
     @NotNull(message = "La fecha de emisión es obligatoria")
     private LocalDate fechaEmision;
     
@@ -20,10 +26,6 @@ public class TicketClienteDTO {
     @NotNull(message = "El precio unitario es obligatorio")
     @DecimalMin(value = "0.01", message = "El precio debe ser mayor a 0")
     private Double precioUnitarioTicket;
-    
-    @NotNull(message = "La cantidad es obligatoria")
-    @Min(value = 1, message = "La cantidad debe ser mayor a 0")
-    private Integer cantidad;
     
     @NotNull(message = "El subtotal es obligatorio")
     @DecimalMin(value = "0.01", message = "El subtotal debe ser mayor a 0")

@@ -3,6 +3,7 @@ package ec.edu.espe.mseventos.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -38,4 +39,7 @@ public class Evento {
 
     @Column(name = "imagen_url")
     private String imagenUrl;
+
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal precio;
 }

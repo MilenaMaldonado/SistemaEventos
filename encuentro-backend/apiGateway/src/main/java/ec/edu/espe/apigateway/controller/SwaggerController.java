@@ -12,7 +12,7 @@ import java.util.*;
 
 @Slf4j
 @RestController
-@CrossOrigin(origins = "*")
+// @CrossOrigin removido - CORS se maneja globalmente
 public class SwaggerController {
 
     @Autowired

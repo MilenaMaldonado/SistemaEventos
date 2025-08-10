@@ -46,11 +46,7 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/actuator/**"
                         ).permitAll()
-
-                        // Preflight CORS
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/notificaciones").hasRole("ADMINISTRADOR")
-
+                        .requestMatchers("/api/usuarios").hasAnyRole("CLIENTE","ADMINSTRADOR")
                         // Cualquier otra ruta: autenticada
                         .anyRequest().authenticated()
                 )

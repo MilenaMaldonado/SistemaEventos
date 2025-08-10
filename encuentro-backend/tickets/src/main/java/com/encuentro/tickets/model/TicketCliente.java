@@ -15,11 +15,12 @@ public class TicketCliente {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idTicketCliente;
 
+    private Long idEvento;
+    private Integer numeroAsiento;
     private LocalDate fechaEmision;
     private String cedula;
     private String metodoPago;
     private double precioUnitarioTicket;
-    private int cantidad;
     private double subtotal;
     private double iva;
     private double total;

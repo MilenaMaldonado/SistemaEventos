@@ -3,6 +3,7 @@ package ec.edu.espe.mseventos.dto;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -33,4 +34,9 @@ public class EventoDTO {
     
     @NotBlank(message = "La URL de la imagen es obligatoria")
     private String imagenUrl;
+    
+    @NotNull(message = "El precio es obligatorio")
+    @DecimalMin(value = "0.0", inclusive = false, message = "El precio debe ser mayor a 0")
+    @DecimalMax(value = "10000.0", message = "El precio no puede exceder 10000")
+    private BigDecimal precio;
 }

@@ -1,19 +1,23 @@
 package com.encuentro.tickets.services;
 
+import com.encuentro.tickets.dto.NotificacionesDTO;
 import com.encuentro.tickets.model.TicketCliente;
 import com.encuentro.tickets.repository.TicketClienteRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class TicketClienteService {
 
     private final TicketClienteRepository repository;
 
-    public TicketClienteService(TicketClienteRepository repository) {
-        this.repository = repository;
-    }
 
     public List<TicketCliente> findAll() {
         return repository.findAll();
@@ -30,4 +34,5 @@ public class TicketClienteService {
     public void delete(Long id) {
         repository.deleteById(id);
     }
+
 }

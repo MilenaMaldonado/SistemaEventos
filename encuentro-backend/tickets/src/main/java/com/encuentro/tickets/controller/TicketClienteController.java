@@ -46,11 +46,12 @@ public class TicketClienteController {
         }
         
         TicketCliente ticket = new TicketCliente();
+        ticket.setIdEvento(ticketDTO.getIdEvento());
+        ticket.setNumeroAsiento(ticketDTO.getNumeroAsiento());
         ticket.setFechaEmision(ticketDTO.getFechaEmision());
         ticket.setCedula(ticketDTO.getCedula());
         ticket.setMetodoPago(ticketDTO.getMetodoPago());
         ticket.setPrecioUnitarioTicket(ticketDTO.getPrecioUnitarioTicket());
-        ticket.setCantidad(ticketDTO.getCantidad());
         ticket.setSubtotal(ticketDTO.getSubtotal());
         ticket.setIva(ticketDTO.getIva());
         ticket.setTotal(ticketDTO.getTotal());
@@ -67,11 +68,12 @@ public class TicketClienteController {
         
         TicketCliente ticket = new TicketCliente();
         ticket.setIdTicketCliente(id);
+        ticket.setIdEvento(ticketDTO.getIdEvento());
+        ticket.setNumeroAsiento(ticketDTO.getNumeroAsiento());
         ticket.setFechaEmision(ticketDTO.getFechaEmision());
         ticket.setCedula(ticketDTO.getCedula());
         ticket.setMetodoPago(ticketDTO.getMetodoPago());
         ticket.setPrecioUnitarioTicket(ticketDTO.getPrecioUnitarioTicket());
-        ticket.setCantidad(ticketDTO.getCantidad());
         ticket.setSubtotal(ticketDTO.getSubtotal());
         ticket.setIva(ticketDTO.getIva());
         ticket.setTotal(ticketDTO.getTotal());
@@ -90,4 +92,5 @@ public class TicketClienteController {
                     .body(new ResponseDto("Ticket no encontrado para eliminar", null));
         }
     }
+
 }
