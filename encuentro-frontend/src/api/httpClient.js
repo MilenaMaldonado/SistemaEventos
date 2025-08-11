@@ -13,14 +13,23 @@ const httpClient = axios.create({
 // Interceptor para agregar token automáticamente
 httpClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    
+    // Leer token desde 'authToken' (preferido) o 'token' (retrocompatibilidad)
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+
+    // Normalizar URL del request
+    const urlPath = (config.url || '').toString();
+
+    // Endpoints públicos que no requieren Authorization
     const publicEndpoints = [
-      '/api/ms-eventos/api/eventos',
-      '/api/ms-eventos/api/evento/:id',
+      '/ms-eventos/api/eventos',
+      '/ms-eventos/api/eventos/',
+      '/ms-eventos/api/eventos/search',
+      '/ms-eventos/api/eventos/categoria',
+      '/ms-eventos/api/eventos/fecha',
+      '/ms-eventos/api/eventos/ciudad',
     ];
 
-    const isPublicEndpoint = publicEndpoints.some((endpoint) => config.url.includes(endpoint));
+    const isPublicEndpoint = publicEndpoints.some((endpoint) => urlPath.startsWith(endpoint) || urlPath.includes(`${endpoint}/`));
 
     if (!isPublicEndpoint && token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -40,7 +49,9 @@ httpClient.interceptors.response.use(
     if (error.response?.status === 401) {
       const currentPath = window.location.pathname;
       if (currentPath !== '/login' && currentPath !== '/register' && currentPath !== '/') {
+        localStorage.removeItem('authToken');
         localStorage.removeItem('token');
+        localStorage.removeItem('userData');
         window.location.href = '/login';
       }
     }

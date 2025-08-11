@@ -1,0 +1,6 @@
+/* Estilos específicos para la pantalla Gestión de Ciudades */
+@import './AdminShared.css';
+
+/* Scope de la página para personalizaciones futuras sin afectar otras vistas */
+.gestion-ciudades {
+}

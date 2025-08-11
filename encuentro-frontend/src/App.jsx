@@ -17,6 +17,8 @@ import GestionUsuarios from './pages/GestionUsuarios';
 import TodasLasCompras from './pages/TodasLasCompras';
 import NoAutorizado from './pages/NoAutorizado';
 import Navbar from './components/Navbar';
+import GestionCiudades from './pages/GestionCiudades';
+import AdminReportes from './pages/AdminReportes';
 import './App.css';
 
 function App() {
@@ -104,10 +106,42 @@ function App() {
           }
         />
         <Route 
+          path="/admin/ciudades" 
+          element={
+            <ProtectedRoute roles={["ADMINISTRADOR"]}>
+              <GestionCiudades />
+            </ProtectedRoute>
+          }
+        />
+        <Route 
+          path="/admin/dashboard" 
+          element={
+            <ProtectedRoute roles={["ADMINISTRADOR"]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route 
           path="/admin/compras" 
           element={
             <ProtectedRoute roles={["ADMINISTRADOR"]}>
               <TodasLasCompras />
+            </ProtectedRoute>
+          }
+        />
+        <Route 
+          path="/admin/tickets" 
+          element={
+            <ProtectedRoute roles={["ADMINISTRADOR"]}>
+              <TodasLasCompras />
+            </ProtectedRoute>
+          }
+        />
+        <Route 
+          path="/admin/reportes" 
+          element={
+            <ProtectedRoute roles={["ADMINISTRADOR"]}>
+              <AdminReportes />
             </ProtectedRoute>
           }
         />
