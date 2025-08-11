@@ -5,7 +5,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AdminDashboard from './pages/AdminDashboard';
-import EventoDetalle from './pages/EventoDetalle';
+import EventoDetallePublico from './pages/EventoDetallePublico';
 import Eventos from './pages/Eventos';
 import Profile from './pages/Profile';
 import ComprarEvento from './pages/ComprarEvento';
@@ -30,7 +30,7 @@ function App() {
         <Route path="/eventos" element={<Eventos />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/evento/:id" element={<EventoDetalle />} />
+                    <Route path="/evento/:id" element={<EventoDetallePublico />} />
         <Route 
           path="/comprar-evento/:id" 
           element={

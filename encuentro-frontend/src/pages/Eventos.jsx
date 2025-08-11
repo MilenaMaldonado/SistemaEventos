@@ -52,7 +52,7 @@ export default function Eventos() {
   }, []);
 
   const handleEventClick = (eventoId) => {
-    navigate(`/evento-detalle/${eventoId}`);
+    navigate(`/evento/${eventoId}`);
   };
 
   if (loading) {

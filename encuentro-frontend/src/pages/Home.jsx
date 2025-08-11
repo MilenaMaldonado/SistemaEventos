@@ -60,7 +60,7 @@ export default function Home() {
   }, []);
 
   const handleVerDetalles = (eventoId) => {
-    navigate(`/evento-detalle/${eventoId}`);
+    navigate(`/evento/${eventoId}`);
   };
 
   return (
