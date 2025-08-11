@@ -190,7 +190,7 @@ const ComprarBoletos = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto mb-4"></div>
           <p className="text-white/80">Cargando información del evento...</p>
@@ -201,7 +201,7 @@ const ComprarBoletos = () => {
 
   if (error && !evento) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="text-red-400 text-xl mb-4">⚠️</div>
           <p className="text-white/80 mb-4">{error}</p>
@@ -218,7 +218,7 @@ const ComprarBoletos = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="text-green-400 text-6xl mb-4">✅</div>
           <h2 className="text-3xl font-bold text-white mb-4">¡Compra Exitosa!</h2>
@@ -232,7 +232,7 @@ const ComprarBoletos = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
+    <div className="min-h-screen">
       <div className="container mx-auto px-4 py-8">
         
         {/* Header */}

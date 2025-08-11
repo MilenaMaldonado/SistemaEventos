@@ -105,7 +105,7 @@ export default function Navbar() {
                   Eventos
                 </Link>
                 <Link 
-                  to="/tickets" 
+                  to="/mis-compras" 
                   className="text-white/70 hover:text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200"
                 >
                   Mis Tickets
@@ -288,7 +288,7 @@ export default function Navbar() {
                     Eventos
                   </Link>
                   <Link 
-                    to="/tickets" 
+                    to="/mis-compras" 
                     className="block text-white/70 hover:text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >

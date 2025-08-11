@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ticketsAPI } from '../api/ticketsAPI';
 import { eventosAPI } from '../api/eventosAPI';
 import { useAuth } from '../contexts/AuthContext';
-import Navbar from '../components/Navbar';
 
 function MisCompras() {
   const { user } = useAuth();
   const [tickets, setTickets] = useState([]);
-  const [eventos, setEventos] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -21,36 +18,85 @@ function MisCompras() {
   const cargarMisTickets = async () => {
     try {
       setLoading(true);
-      console.log('Cargando tickets para cedula:', user.cedula);
+      setError(null);
       
-      // Obtener tickets del usuario
-      const response = await ticketsAPI.getTicketsPorCliente(user.cedula);
-      console.log('Respuesta tickets:', response);
+      console.log('🔍 Cargando tickets para usuario:', user.cedula);
       
-      const ticketsData = response.respuesta || response.data || response || [];
-      setTickets(Array.isArray(ticketsData) ? ticketsData : []);
+      // Obtener todos los usuarios para encontrar los IDs de tickets
+      console.log('📥 Obteniendo lista de usuarios...');
+      const usuariosResponse = await fetch('http://localhost:8000/api/ms-usuarios/api/usuarios');
       
-      // Cargar información de eventos para cada ticket
-      if (ticketsData && ticketsData.length > 0) {
-        const eventosInfo = {};
-        for (const ticket of ticketsData) {
-          if (ticket.idEvento && !eventosInfo[ticket.idEvento]) {
-            try {
-              const eventoResponse = await eventosAPI.getById(ticket.idEvento);
-              const eventoData = eventoResponse.respuesta || eventoResponse.data || eventoResponse;
-              if (eventoData) {
-                eventosInfo[ticket.idEvento] = eventoData;
-              }
-            } catch (error) {
-              console.error(`Error cargando evento ${ticket.idEvento}:`, error);
-            }
-          }
-        }
-        setEventos(eventosInfo);
+      if (!usuariosResponse.ok) {
+        throw new Error(`Error obteniendo usuarios: ${usuariosResponse.status}`);
       }
+      
+      const usuarios = await usuariosResponse.json();
+      console.log('👥 Usuarios obtenidos:', usuarios);
+      
+      // Buscar el usuario actual por cédula
+      const usuarioActual = usuarios.find(u => u.cedula === user.cedula);
+      
+      if (!usuarioActual) {
+        console.log('❌ Usuario no encontrado en la lista');
+        setTickets([]);
+        return;
+      }
+      
+      console.log('👤 Usuario encontrado:', usuarioActual);
+      
+      // Buscar todos los tickets que pertenezcan al usuario
+      const misTickets = [];
+      
+      // Intentar obtener tickets (probando diferentes IDs)
+      for (let ticketId = 1; ticketId <= 50; ticketId++) {
+        try {
+          console.log(`🎫 Verificando ticket ID: ${ticketId}`);
+          const ticketResponse = await fetch(`http://localhost:8000/api/ms-tickets/api/tickets-clientes/${ticketId}`);
+          
+          if (ticketResponse.ok) {
+            const ticketData = await ticketResponse.json();
+            console.log(`✅ Ticket ${ticketId} obtenido:`, ticketData);
+            
+            // Verificar si el ticket pertenece al usuario actual
+            if (ticketData.respuesta && ticketData.respuesta.cedula === user.cedula) {
+              console.log(`🎯 Ticket ${ticketId} pertenece al usuario actual`);
+              
+              // Obtener información del evento
+              try {
+                const eventoResponse = await eventosAPI.getById(ticketData.respuesta.idEvento);
+                const evento = eventoResponse.respuesta || eventoResponse.data || eventoResponse;
+                
+                misTickets.push({
+                  ...ticketData.respuesta,
+                  evento: evento
+                });
+              } catch (eventError) {
+                console.error(`Error obteniendo evento ${ticketData.respuesta.idEvento}:`, eventError);
+                misTickets.push({
+                  ...ticketData.respuesta,
+                  evento: { nombre: 'Evento no encontrado' }
+                });
+              }
+            }
+          } else if (ticketResponse.status === 404) {
+            // No hay más tickets, salir del bucle
+            console.log(`❌ No se encontró ticket con ID: ${ticketId}, detener búsqueda`);
+            break;
+          }
+        } catch (ticketError) {
+          console.log(`❌ Error obteniendo ticket ${ticketId}:`, ticketError.message);
+          // Continuar con el siguiente ticket
+        }
+      }
+      
+      console.log('🎫 Total de tickets encontrados para el usuario:', misTickets.length);
+      console.log('🎫 Detalles de mis tickets:', misTickets);
+      
+      setTickets(misTickets);
+      
     } catch (error) {
-      console.error('Error cargando tickets:', error);
-      setError('Error al cargar tus compras');
+      console.error('❌ Error cargando tickets:', error);
+      setError(`Error al cargar tus compras: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -67,8 +113,7 @@ function MisCompras() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
-        <Navbar />
+      <div className="min-h-screen">
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto mb-4"></div>
@@ -81,8 +126,7 @@ function MisCompras() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
-        <Navbar />
+      <div className="min-h-screen">
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
             <div className="text-red-400 text-xl mb-4">⚠️</div>
@@ -100,8 +144,7 @@ function MisCompras() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
-      <Navbar />
+    <div className="min-h-screen">
       <div className="container mx-auto px-4 py-8">
         
         {/* Header */}
@@ -129,18 +172,18 @@ function MisCompras() {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {tickets.map((ticket, index) => {
-              const evento = eventos[ticket.idEvento];
+              const evento = ticket.evento;
               
               return (
                 <div 
-                  key={ticket.id || index}
+                  key={ticket.idTicketCliente || index}
                   className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-all duration-300"
                 >
                   {/* Header del ticket */}
                   <div className="mb-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm font-medium">
-                        Ticket #{ticket.id || index + 1}
+                        Ticket #{ticket.idTicketCliente}
                       </span>
                       <span className="text-white/60 text-sm">
                         Asiento {ticket.numeroAsiento}
@@ -151,7 +194,7 @@ function MisCompras() {
                       {evento?.nombre || 'Evento no encontrado'}
                     </h3>
                     
-                    {evento && (
+                    {evento && evento.establecimiento && (
                       <p className="text-white/70 text-sm">
                         {evento.establecimiento}
                       </p>
@@ -193,8 +236,12 @@ function MisCompras() {
                       <span>${ticket.precioUnitarioTicket?.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between items-center text-white/80 text-sm mb-1">
-                      <span>IVA:</span>
-                      <span>${ticket.iva?.toFixed(2)}</span>
+                      <span>Subtotal:</span>
+                      <span>${ticket.subtotal?.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-white/80 text-sm mb-1">
+                      <span>IVA ({(ticket.iva * 100).toFixed(0)}%):</span>
+                      <span>${(ticket.subtotal * ticket.iva)?.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between items-center text-lg font-bold text-green-400">
                       <span>Total:</span>

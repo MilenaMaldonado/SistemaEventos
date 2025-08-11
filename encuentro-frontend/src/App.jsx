@@ -24,8 +24,9 @@ function App() {
 
   return (
     <AuthProvider>
-      <Navbar />
-      <Routes>
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
+        <Navbar />
+        <Routes>
         {/* Rutas Públicas */}
         <Route path="/" element={<Home />} />
         <Route path="/home" element={<Home />} />
@@ -114,6 +115,7 @@ function App() {
         {/* Ruta para manejar rutas no encontradas */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
+      </div>
     </AuthProvider>
   );
 }

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { eventosAPI } from '../api/eventosAPI';
-import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
 export default function Eventos() {
@@ -57,8 +56,7 @@ export default function Eventos() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
-        <Navbar />
+      <div className="min-h-screen">
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="w-16 h-16 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
@@ -71,8 +69,7 @@ export default function Eventos() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
-        <Navbar />
+      <div className="min-h-screen">
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -94,8 +91,7 @@ export default function Eventos() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
-      <Navbar />
+    <div className="min-h-screen">
       
       {/* Background effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
