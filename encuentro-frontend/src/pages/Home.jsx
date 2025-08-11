@@ -30,7 +30,7 @@ export default function Home() {
         setError(null);
         
         const response = await eventosAPI.getAll();
-        console.log('Eventos obtenidos:', response);
+
         
         // La estructura es data.respuesta
         const eventosData = response.data?.respuesta || response.respuesta;
@@ -44,11 +44,9 @@ export default function Home() {
           
           setEventos(eventosOrdenados);
         } else {
-          console.error('Estructura de respuesta inesperada:', response);
           setError('No se pudieron cargar los eventos');
         }
       } catch (error) {
-        console.error('Error fetching eventos:', error);
         setError('Error al cargar los eventos');
       } finally {
         setLoading(false);

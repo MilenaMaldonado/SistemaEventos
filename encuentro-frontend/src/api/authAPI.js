@@ -44,15 +44,6 @@ export const authAPI = {
     }
   },
 
-  // Validar token
-  validateToken: async () => {
-    try {
-      const response = await apiRequest.get(API_CONFIG.ENDPOINTS.AUTH.VALIDATE);
-      return response;
-    } catch (error) {
-      throw error;
-    }
-  },
 
   // Verificar si el usuario está autenticado
   isAuthenticated: () => {

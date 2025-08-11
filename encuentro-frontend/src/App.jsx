@@ -1,5 +1,6 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { useAuthInterceptor } from './hooks/useAuthInterceptor';
 import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -19,14 +20,19 @@ import NoAutorizado from './pages/NoAutorizado';
 import Navbar from './components/Navbar';
 import './App.css';
 
-function App() {
-  console.log("App: Rendering Navbar"); // Verificar si Navbar se está renderizando
+function AppContent() {
+  const location = useLocation();
+  
+  // Usar el interceptor de autenticación para auto-logout
+  useAuthInterceptor();
+  
+  // Rutas donde NO se debe mostrar el Navbar (rutas de administrador)
+  const shouldHideNavbar = location.pathname.startsWith('/admin');
 
   return (
-    <AuthProvider>
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
-        <Navbar />
-        <Routes>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
+      {!shouldHideNavbar && <Navbar />}
+      <Routes>
         {/* Rutas Públicas */}
         <Route path="/" element={<Home />} />
         <Route path="/home" element={<Home />} />
@@ -115,7 +121,14 @@ function App() {
         {/* Ruta para manejar rutas no encontradas */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
-      </div>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
     </AuthProvider>
   );
 }

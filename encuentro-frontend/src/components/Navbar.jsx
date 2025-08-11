@@ -3,21 +3,34 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Navbar() {
+  // ✅ TODOS LOS HOOKS SE LLAMAN SIEMPRE AL INICIO
   const auth = useAuth();
+  const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Debug logging solo en desarrollo
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Navbar - Estado de autenticación:', {
-      isAuthenticated: auth?.isAuthenticated,
-      userName: auth?.userName,
-      userRole: auth?.userRole,
-      isLoading: auth?.isLoading,
-      isAdmin: auth?.isAdmin
-    });
-  }
+  // Extraer valores de auth de forma segura
+  const token = auth?.token || null;
+  const userName = auth?.userName || 'Usuario';
+  const userRole = auth?.userRole || 'guest';
+  const isAuthenticated = auth?.isAuthenticated || false;
+  const isLoading = auth?.isLoading || false;
+  const isAdmin = auth?.isAdmin || false;
+  const logout = auth?.logout;
 
+  const handleLogout = () => {
+    if (logout) {
+      logout();
+    }
+    navigate('/');
+    setIsMobileMenuOpen(false);
+  };
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  // Verificaciones después de llamar todos los Hooks
   if (!auth) {
-    console.error("Navbar: useAuth returned undefined. Ensure AuthProvider is correctly set up.");
     return (
       <nav>
         <div>Error: AuthProvider no está configurado correctamente.</div>
@@ -26,7 +39,7 @@ export default function Navbar() {
   }
 
   // Mostrar spinner mientras se carga el estado de autenticación
-  if (auth.isLoading) {
+  if (isLoading) {
     return (
       <nav className="bg-slate-900/50 backdrop-blur-xl border-b border-white/10 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -36,24 +49,6 @@ export default function Navbar() {
         </div>
       </nav>
     );
-  }
-
-  const { token = null, userName = 'Usuario', logout, userRole = 'guest', isAuthenticated = false, isLoading = true, isAdmin = false } = auth;
-  const navigate = useNavigate();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-    setIsMobileMenuOpen(false);
-  };
-
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
-  if (isLoading) {
-    return null; // O un spinner de carga si prefieres
   }
 
   return (
@@ -110,58 +105,6 @@ export default function Navbar() {
                 >
                   Mis Tickets
                 </Link>
-                
-                {/* Opciones específicas de Admin */}
-                {isAdmin && (
-                  <>
-                    <div className="relative group">
-                      <button className="text-white/70 hover:text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200 flex items-center space-x-1">
-                        <span>Administración</span>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-                      <div className="absolute top-full left-0 mt-2 w-48 bg-gray-800/95 backdrop-blur-sm border border-white/10 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                        <Link 
-                          to="/admin/dashboard" 
-                          className="block px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 rounded-t-lg"
-                        >
-                          Dashboard
-                        </Link>
-                        <Link 
-                          to="/admin/eventos" 
-                          className="block px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200"
-                        >
-                          Gestionar Eventos
-                        </Link>
-                        <Link 
-                          to="/admin/usuarios" 
-                          className="block px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200"
-                        >
-                          Gestionar Usuarios
-                        </Link>
-                        <Link 
-                          to="/admin/tickets" 
-                          className="block px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200"
-                        >
-                          Gestionar Tickets
-                        </Link>
-                        <Link 
-                          to="/admin/reportes" 
-                          className="block px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200"
-                        >
-                          Reportes
-                        </Link>
-                        <Link 
-                          to="/admin/configuracion" 
-                          className="block px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 rounded-b-lg"
-                        >
-                          Configuración
-                        </Link>
-                      </div>
-                    </div>
-                  </>
-                )}
                 
                 <Link 
                   to="/profile" 
@@ -299,11 +242,8 @@ export default function Navbar() {
                   {isAdmin && (
                     <>
                       <div className="pt-2 pb-2">
-                        <div className="text-white/50 text-xs uppercase tracking-wider px-3 py-1">
-                          Administración
-                        </div>
                         <Link
-                          to="/admin/dashboard"
+                          to="/admin"
                           className="block text-white/70 hover:text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >

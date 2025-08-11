@@ -13,7 +13,7 @@ const httpClient = axios.create({
 // Interceptor para agregar token automáticamente
 httpClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('authToken');
     
     const publicEndpoints = [
       '/api/ms-eventos/api/eventos',
@@ -36,11 +36,33 @@ httpClient.interceptors.request.use(
 httpClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Manejar errores 401 (No autorizado)
-    if (error.response?.status === 401) {
+    // Manejar errores de autenticación (401 y 403)
+    if (error.response?.status === 401 || error.response?.status === 403) {
       const currentPath = window.location.pathname;
-      if (currentPath !== '/login' && currentPath !== '/register' && currentPath !== '/') {
-        localStorage.removeItem('token');
+      const publicPaths = ['/login', '/register', '/', '/eventos'];
+      
+      // Solo hacer auto-logout si no estamos en páginas públicas
+      if (!publicPaths.includes(currentPath)) {
+        console.log('Token inválido o expirado detectado - auto logout');
+        
+        // Limpiar tokens
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userData');
+        
+        // Verificar si la respuesta indica token expirado
+        const errorData = error.response?.data;
+        const errorMessage = errorData?.message || errorData?.error || '';
+        
+        if (errorMessage.toLowerCase().includes('token') || 
+            errorMessage.toLowerCase().includes('expired') ||
+            errorMessage.toLowerCase().includes('unauthorized') ||
+            errorMessage.toLowerCase().includes('forbidden')) {
+          
+          // Disparar evento personalizado para que AuthContext lo maneje
+          window.dispatchEvent(new CustomEvent('tokenExpired'));
+        }
+        
+        // Redirigir al login
         window.location.href = '/login';
       }
     }

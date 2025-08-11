@@ -27,7 +27,7 @@ export default function Register() {
   useEffect(() => {
     if (isAuthenticated) {
       if (isAdmin) {
-        navigate('/admin-dashboard');
+        navigate('/admin');
       } else {
         navigate('/evento-detalle/1');
       }
@@ -96,12 +96,57 @@ export default function Register() {
       const response = await register(form);
       console.log('Registro exitoso:', response);
       
-      setSuccess('¡Registro exitoso! Redirigiendo al login...');
-      setTimeout(() => navigate('/login'), 2000);
+      // Verificar si el usuario registrado es administrador
+      // Revisar diferentes posibles estructuras de respuesta del servidor
+      const responseData = response?.data;
+      const userData = responseData?.data || responseData?.usuario || responseData;
+      
+      const isAdminUser = userData?.role === 'ROLE_ADMINISTRADOR' || 
+                         userData?.rol === 'ROLE_ADMINISTRADOR' ||
+                         userData?.role === 'ADMINISTRADOR' || 
+                         userData?.rol === 'ADMINISTRADOR' ||
+                         userData?.role === 'ADMIN' ||
+                         userData?.rol === 'ADMIN' ||
+                         // También verificar si el email contiene patrones de administrador
+                         form.correo?.toLowerCase().includes('admin') ||
+                         // Puedes agregar más lógica específica para identificar admins
+                         // Por ejemplo, cédulas específicas o dominios de email
+                         form.correo?.endsWith('@admin.encuentro.com');
+      
+      console.log('Verificando si es admin:', { userData, isAdminUser, form: { correo: form.correo } });
+      
+      if (isAdminUser) {
+        setSuccess('¡Registro exitoso! Redirigiendo al panel de administración...');
+        setTimeout(() => navigate('/admin'), 2000);
+      } else {
+        setSuccess('¡Registro exitoso! Redirigiendo al login...');
+        setTimeout(() => navigate('/login'), 2000);
+      }
     } catch (error) {
       console.error('Error en registro:', error);
       const processedError = handleApiError(error);
-      setError(processedError.message || 'Error al registrar usuario. Intenta nuevamente.');
+      
+      // Extraer mensaje de error más específico del servidor
+      let errorMessage = 'Error al registrar usuario. Intenta nuevamente.';
+      
+      if (processedError.data) {
+        // Intentar extraer el mensaje del servidor en diferentes formatos
+        errorMessage = processedError.data.mensaje || 
+                      processedError.data.message ||
+                      processedError.data.respuesta ||
+                      processedError.data.error ||
+                      processedError.message ||
+                      errorMessage;
+        
+        // Si hay errores de validación específicos, mostrarlos
+        if (processedError.data.errores && Array.isArray(processedError.data.errores)) {
+          errorMessage = processedError.data.errores.join('. ');
+        }
+      } else {
+        errorMessage = processedError.message || errorMessage;
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
