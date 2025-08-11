@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usuariosAPI } from '../api/usuariosAPI';
-import useAuth from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Profile() {
   const { user, isAdmin, isCliente } = useAuth();

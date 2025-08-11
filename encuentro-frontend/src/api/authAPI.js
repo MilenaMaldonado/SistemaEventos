@@ -36,10 +36,10 @@ export const authAPI = {
   logout: async () => {
     try {
       const response = await apiRequest.post(API_CONFIG.ENDPOINTS.AUTH.LOGOUT);
-      localStorage.removeItem('token');
+      localStorage.removeItem('authToken');
       return response;
     } catch (error) {
-      localStorage.removeItem('token');
+      localStorage.removeItem('authToken');
       throw error;
     }
   },
@@ -56,23 +56,23 @@ export const authAPI = {
 
   // Verificar si el usuario está autenticado
   isAuthenticated: () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('authToken');
     return !!token;
   },
 
   // Obtener token del localStorage
   getToken: () => {
-    return localStorage.getItem('token');
+    return localStorage.getItem('authToken');
   },
 
   // Guardar token en localStorage
   setToken: (token) => {
-    localStorage.setItem('token', token);
+    localStorage.setItem('authToken', token);
   },
 
   // Eliminar token del localStorage
   removeToken: () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('authToken');
   }
 };
 

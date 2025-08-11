@@ -4,7 +4,6 @@ import { useAuth } from '../contexts/AuthContext';
 
 export default function Navbar() {
   const auth = useAuth();
-  console.log("Navbar: Checking useAuth context:", auth); // Log added to check auth context
 
   if (!auth) {
     console.error("Navbar: useAuth returned undefined. Ensure AuthProvider is correctly set up.");
@@ -15,7 +14,7 @@ export default function Navbar() {
     );
   }
 
-  const { token = null, userId = 'Usuario', logout, userRole = 'guest', isAuthenticated = false, isLoading = true } = auth;
+  const { token = null, userName = 'Usuario', logout, userRole = 'guest', isAuthenticated = false, isLoading = true, isAdmin = false } = auth;
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -28,12 +27,6 @@ export default function Navbar() {
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
-
-  console.log("Navbar - useAuth values:", { token, userId, userRole, isAuthenticated, isLoading });
-
-  if (!token) {
-    console.error("Navbar: Token is undefined. Check AuthProvider initialization.");
-  }
 
   if (isLoading) {
     return null; // O un spinner de carga si prefieres
@@ -76,19 +69,76 @@ export default function Navbar() {
             ) : (
               <>
                 <Link 
+                  to="/" 
+                  className="text-white/90 hover:text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200"
+                >
+                  Inicio
+                </Link>
+                <Link 
                   to="/eventos" 
                   className="text-white/90 hover:text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200"
                 >
                   Eventos
                 </Link>
-                {userRole === 'admin' && (
-                  <Link 
-                    to="/admin-dashboard" 
-                    className="text-white/70 hover:text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200"
-                  >
-                    Dashboard Admin
-                  </Link>
+                <Link 
+                  to="/tickets" 
+                  className="text-white/70 hover:text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200"
+                >
+                  Mis Tickets
+                </Link>
+                
+                {/* Opciones específicas de Admin */}
+                {isAdmin && (
+                  <>
+                    <div className="relative group">
+                      <button className="text-white/70 hover:text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200 flex items-center space-x-1">
+                        <span>Administración</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      <div className="absolute top-full left-0 mt-2 w-48 bg-gray-800/95 backdrop-blur-sm border border-white/10 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                        <Link 
+                          to="/admin/dashboard" 
+                          className="block px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 rounded-t-lg"
+                        >
+                          Dashboard
+                        </Link>
+                        <Link 
+                          to="/admin/eventos" 
+                          className="block px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200"
+                        >
+                          Gestionar Eventos
+                        </Link>
+                        <Link 
+                          to="/admin/usuarios" 
+                          className="block px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200"
+                        >
+                          Gestionar Usuarios
+                        </Link>
+                        <Link 
+                          to="/admin/tickets" 
+                          className="block px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200"
+                        >
+                          Gestionar Tickets
+                        </Link>
+                        <Link 
+                          to="/admin/reportes" 
+                          className="block px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200"
+                        >
+                          Reportes
+                        </Link>
+                        <Link 
+                          to="/admin/configuracion" 
+                          className="block px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200 rounded-b-lg"
+                        >
+                          Configuración
+                        </Link>
+                      </div>
+                    </div>
+                  </>
                 )}
+                
                 <Link 
                   to="/profile" 
                   className="text-white/70 hover:text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200"
@@ -121,11 +171,11 @@ export default function Navbar() {
                 <div className="flex items-center space-x-3 bg-white/5 rounded-full px-4 py-2">
                   <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-purple-400 rounded-full flex items-center justify-center">
                     <span className="text-white text-sm font-medium">
-                      {userId?.slice(-2) || 'U'}
+                      {userName?.slice(-2) || 'U'}
                     </span>
                   </div>
                   <span className="text-white/90 text-sm font-medium">
-                    {userId || 'Usuario'}
+                    {userName || 'Usuario'}
                   </span>
                 </div>
                 <button
@@ -200,21 +250,80 @@ export default function Navbar() {
               ) : (
                 <>
                   <Link 
+                    to="/" 
+                    className="block text-white/90 hover:text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Inicio
+                  </Link>
+                  <Link 
                     to="/eventos" 
                     className="block text-white/90 hover:text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Eventos
                   </Link>
-                  {userRole === 'admin' && (
-                    <Link
-                      to="/admin-dashboard"
-                      className="block text-white/70 hover:text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      Dashboard Admin
-                    </Link>
+                  <Link 
+                    to="/tickets" 
+                    className="block text-white/70 hover:text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Mis Tickets
+                  </Link>
+                  
+                  {/* Opciones de Admin en móvil */}
+                  {isAdmin && (
+                    <>
+                      <div className="pt-2 pb-2">
+                        <div className="text-white/50 text-xs uppercase tracking-wider px-3 py-1">
+                          Administración
+                        </div>
+                        <Link
+                          to="/admin/dashboard"
+                          className="block text-white/70 hover:text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          Dashboard
+                        </Link>
+                        <Link
+                          to="/admin/eventos"
+                          className="block text-white/70 hover:text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          Gestionar Eventos
+                        </Link>
+                        <Link
+                          to="/admin/usuarios"
+                          className="block text-white/70 hover:text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          Gestionar Usuarios
+                        </Link>
+                        <Link
+                          to="/admin/tickets"
+                          className="block text-white/70 hover:text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          Gestionar Tickets
+                        </Link>
+                        <Link
+                          to="/admin/reportes"
+                          className="block text-white/70 hover:text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          Reportes
+                        </Link>
+                        <Link
+                          to="/admin/configuracion"
+                          className="block text-white/70 hover:text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          Configuración
+                        </Link>
+                      </div>
+                    </>
                   )}
+                  
                   <Link 
                     to="/profile" 
                     className="block text-white/70 hover:text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200"
@@ -226,11 +335,11 @@ export default function Navbar() {
                     <div className="flex items-center space-x-3 px-3 py-2">
                       <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-purple-400 rounded-full flex items-center justify-center">
                         <span className="text-white text-sm font-medium">
-                          {userId?.slice(-2) || 'U'}
+                          {userName?.slice(-2) || 'U'}
                         </span>
                       </div>
                       <span className="text-white/90 text-sm font-medium">
-                        {userId || 'Usuario'}
+                        {userName || 'Usuario'}
                       </span>
                     </div>
                     <button

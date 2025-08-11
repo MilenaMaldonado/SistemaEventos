@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { eventosAPI } from '../api/eventosAPI';
 import { asientosAPI, ticketsAPI } from '../api/ticketsAPI';
 import AsientoSelector from '../components/AsientoSelector';
-import useAuth from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import './EventoDetalle.css';
 
 const EventoDetalle = () => {

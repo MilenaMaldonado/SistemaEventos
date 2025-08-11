@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { authAPI, handleApiError } from '../api';
-import useAuth from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
   const [cedula, setCedula] = useState('');
@@ -9,7 +9,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { login, isAuthenticated, isAdmin } = useAuth();
+  const { login, logout, isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -28,18 +28,69 @@ export default function Login() {
     }
   }, [isAuthenticated, isAdmin, navigate, from]);
 
+  const onLoginSuccess = (role, id, token, name) => {
+    // Primero limpiar cualquier sesión anterior
+    logout();
+    // Luego hacer login con los nuevos datos
+    setTimeout(() => {
+      login(role, id, token, name);
+      navigate(from); // Redirigir a la página original o al home
+    }, 100);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
-    
+
     try {
       console.log('Intentando iniciar sesión con:', { cedula, password: '***' });
-      
-      const response = await login({ cedula, password });
+
+      // Llamar a la API real de autenticación
+      const response = await authAPI.login({
+        cedula,
+        password
+      });
+
       console.log('Login exitoso:', response);
+      console.log('Response data:', response.data);
       
-      // El useEffect manejará la redirección basada en isAuthenticated e isAdmin
+      // Extraer datos del usuario de la respuesta de la API
+      const userData = response.data;
+      
+      // Verificar que la respuesta tenga los datos necesarios
+      if (!userData || !userData.respuesta) {
+        throw new Error('No se recibió el token de autenticación');
+      }
+
+      // El token está en el campo 'respuesta'
+      const token = userData.respuesta;
+      
+      // Decodificar el JWT para obtener la información del usuario
+      let decodedToken;
+      try {
+        // Decodificar la parte del payload del JWT (sin verificar la firma)
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        
+        decodedToken = JSON.parse(jsonPayload);
+        console.log('Decoded token:', decodedToken);
+      } catch (error) {
+        console.error('Error decoding token:', error);
+        throw new Error('Token inválido recibido del servidor');
+      }
+
+      // Extraer información del usuario del token decodificado
+      const userRole = decodedToken.role || decodedToken.roles || 'USER';
+      const userId = decodedToken.sub || decodedToken.cedula || decodedToken.userId;
+      const userName = decodedToken.name || decodedToken.nombre || decodedToken.username || userId || 'Usuario';
+
+      console.log('Extracted values:', { userRole, userId, token, userName });
+
+      onLoginSuccess(userRole, userId, token, userName);
     } catch (error) {
       console.error('Error en login:', error);
       const processedError = handleApiError(error);

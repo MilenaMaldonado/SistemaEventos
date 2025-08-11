@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { asientosAPI, ticketsAPI } from '../api/ticketsAPI';
-import useAuth from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import './AsientoSelector.css';
 
 const ESTADOS_ASIENTO = {
