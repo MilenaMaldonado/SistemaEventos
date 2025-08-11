@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 // Asegurar que roles tenga un valor predeterminado seguro
 function ProtectedRoute({ children, roles = [] }) {
-  const { isAuthenticated = false, hasRole = () => false, isLoading = false } = useAuth();
+  const { isAuthenticated = false, hasRole = () => false, isLoading = false, userRole } = useAuth();
 
   if (isLoading) {
     return <div>Cargando...</div>;
@@ -15,6 +15,7 @@ function ProtectedRoute({ children, roles = [] }) {
   }
 
   if (roles.length > 0 && !hasRole(roles)) {
+    console.warn('ProtectedRoute - Usuario sin permisos suficientes:', { userRole, requiredRoles: roles });
     return <Navigate to="/no-autorizado" />;
   }
 

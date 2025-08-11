@@ -44,9 +44,8 @@ const EventoDetallePublico = () => {
         state: { from: `/evento/${id}` } 
       });
     } else {
-      // Redirigir a la página de compra (por ahora solo muestra alerta)
-      alert('Funcionalidad de compra próximamente...');
-      // navigate(`/comprar-evento/${id}`);
+      // Redirigir a la página de compra
+      navigate(`/comprar-boletos/${id}`);
     }
   };
 

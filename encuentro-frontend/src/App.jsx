@@ -9,11 +9,13 @@ import EventoDetallePublico from './pages/EventoDetallePublico';
 import Eventos from './pages/Eventos';
 import Profile from './pages/Profile';
 import ComprarEvento from './pages/ComprarEvento';
+import ComprarBoletos from './pages/ComprarBoletos';
 import MisCompras from './pages/MisCompras';
 import GestionEventos from './pages/GestionEventos';
 import GestionCategorias from './pages/GestionCategorias';
 import GestionUsuarios from './pages/GestionUsuarios';
 import TodasLasCompras from './pages/TodasLasCompras';
+import NoAutorizado from './pages/NoAutorizado';
 import Navbar from './components/Navbar';
 import './App.css';
 
@@ -30,7 +32,16 @@ function App() {
         <Route path="/eventos" element={<Eventos />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-                    <Route path="/evento/:id" element={<EventoDetallePublico />} />
+        <Route path="/no-autorizado" element={<NoAutorizado />} />
+        <Route path="/evento/:id" element={<EventoDetallePublico />} />
+        <Route 
+          path="/comprar-boletos/:id" 
+          element={
+            <ProtectedRoute roles={["CLIENTE", "ADMINISTRADOR"]}>
+              <ComprarBoletos />
+            </ProtectedRoute>
+          }
+        />
         <Route 
           path="/comprar-evento/:id" 
           element={
