@@ -1,10 +1,21 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import useAuth from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Navbar() {
-  const { token, user, logout, role, isAuthenticated, isAdmin } = useAuth();
+  const auth = useAuth();
+  console.log("Navbar: Checking useAuth context:", auth); // Log added to check auth context
+
+  if (!auth) {
+    console.error("Navbar: useAuth returned undefined. Ensure AuthProvider is correctly set up.");
+    return (
+      <nav>
+        <div>Error: AuthProvider no está configurado correctamente.</div>
+      </nav>
+    );
+  }
+
+  const { token = null, userId = 'Usuario', logout, userRole = 'guest', isAuthenticated = false, isLoading = true } = auth;
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -17,6 +28,16 @@ export default function Navbar() {
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
+
+  console.log("Navbar - useAuth values:", { token, userId, userRole, isAuthenticated, isLoading });
+
+  if (!token) {
+    console.error("Navbar: Token is undefined. Check AuthProvider initialization.");
+  }
+
+  if (isLoading) {
+    return null; // O un spinner de carga si prefieres
+  }
 
   return (
     <nav className="backdrop-blur-md bg-white/10 border-b border-white/10 sticky top-0 z-50">
@@ -60,7 +81,7 @@ export default function Navbar() {
                 >
                   Eventos
                 </Link>
-                {isAdmin && (
+                {userRole === 'admin' && (
                   <Link 
                     to="/admin-dashboard" 
                     className="text-white/70 hover:text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200"
@@ -100,11 +121,11 @@ export default function Navbar() {
                 <div className="flex items-center space-x-3 bg-white/5 rounded-full px-4 py-2">
                   <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-purple-400 rounded-full flex items-center justify-center">
                     <span className="text-white text-sm font-medium">
-                      {user?.cedula?.slice(-2) || 'U'}
+                      {userId?.slice(-2) || 'U'}
                     </span>
                   </div>
                   <span className="text-white/90 text-sm font-medium">
-                    {user?.cedula || 'Usuario'}
+                    {userId || 'Usuario'}
                   </span>
                 </div>
                 <button
@@ -185,7 +206,7 @@ export default function Navbar() {
                   >
                     Eventos
                   </Link>
-                  {isAdmin && (
+                  {userRole === 'admin' && (
                     <Link
                       to="/admin-dashboard"
                       className="block text-white/70 hover:text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200"
@@ -205,11 +226,11 @@ export default function Navbar() {
                     <div className="flex items-center space-x-3 px-3 py-2">
                       <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-purple-400 rounded-full flex items-center justify-center">
                         <span className="text-white text-sm font-medium">
-                          {user?.cedula?.slice(-2) || 'U'}
+                          {userId?.slice(-2) || 'U'}
                         </span>
                       </div>
                       <span className="text-white/90 text-sm font-medium">
-                        {user?.cedula || 'Usuario'}
+                        {userId || 'Usuario'}
                       </span>
                     </div>
                     <button

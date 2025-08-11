@@ -1,4 +1,6 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -6,51 +8,103 @@ import AdminDashboard from './pages/AdminDashboard';
 import EventoDetalle from './pages/EventoDetalle';
 import Eventos from './pages/Eventos';
 import Profile from './pages/Profile';
-import { AuthProvider } from './contexts/AuthContext';
-import useAuth from './hooks/useAuth';
-import './App.css'
+import ComprarEvento from './pages/ComprarEvento';
+import MisCompras from './pages/MisCompras';
+import GestionEventos from './pages/GestionEventos';
+import GestionCategorias from './pages/GestionCategorias';
+import GestionUsuarios from './pages/GestionUsuarios';
+import TodasLasCompras from './pages/TodasLasCompras';
+import Navbar from './components/Navbar';
+import './App.css';
 
-function PrivateRoute({ children, roles }) {
-  const { isAuthenticated, role } = useAuth();
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (roles && !roles.includes(role)) return <Navigate to="/" replace />;
-  return children;
-}
 function App() {
+  console.log("App: Rendering Navbar"); // Verificar si Navbar se está renderizando
 
   return (
-    <>
-      <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/eventos" element={<Eventos />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/evento-detalle/:id" element={<EventoDetalle />} />
-          <Route path="/profile" element={
-            <PrivateRoute>
+    <AuthProvider>
+      <Navbar />
+      <Routes>
+        {/* Rutas Públicas */}
+        <Route path="/" element={<Home />} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/eventos" element={<Eventos />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/evento/:id" element={<EventoDetalle />} />
+        <Route 
+          path="/comprar-evento/:id" 
+          element={
+            <ProtectedRoute roles={["CLIENTE", "ADMINISTRADOR"]}>
+              <ComprarEvento />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Rutas para Clientes y Administradores */}
+        <Route 
+          path="/profile" 
+          element={
+            <ProtectedRoute roles={["CLIENTE", "ADMINISTRADOR"]}>
               <Profile />
-            </PrivateRoute>
-          } />
-          <Route path="/admin-dashboard" element={
-            <PrivateRoute roles={["ROLE_ADMINISTRADOR"]}>
+            </ProtectedRoute>
+          }
+        />
+        <Route 
+          path="/mis-compras" 
+          element={
+            <ProtectedRoute roles={["CLIENTE", "ADMINISTRADOR"]}>
+              <MisCompras />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Rutas exclusivas para Administrador */}
+        <Route 
+          path="/admin" 
+          element={
+            <ProtectedRoute roles={["ADMINISTRADOR"]}>
               <AdminDashboard />
-            </PrivateRoute>
-          } />
-          {/* Legacy routes for compatibility */}
-          <Route path="/evento/:id" element={<EventoDetalle />} />
-          <Route path="/admin" element={
-            <PrivateRoute roles={["ROLE_ADMINISTRADOR"]}>
-              <AdminDashboard />
-            </PrivateRoute>
-          } />
-        </Routes>
-      </Router>
+            </ProtectedRoute>
+          }
+        />
+        <Route 
+          path="/admin/eventos" 
+          element={
+            <ProtectedRoute roles={["ADMINISTRADOR"]}>
+              <GestionEventos />
+            </ProtectedRoute>
+          }
+        />
+        <Route 
+          path="/admin/categorias" 
+          element={
+            <ProtectedRoute roles={["ADMINISTRADOR"]}>
+              <GestionCategorias />
+            </ProtectedRoute>
+          }
+        />
+        <Route 
+          path="/admin/usuarios" 
+          element={
+            <ProtectedRoute roles={["ADMINISTRADOR"]}>
+              <GestionUsuarios />
+            </ProtectedRoute>
+          }
+        />
+        <Route 
+          path="/admin/compras" 
+          element={
+            <ProtectedRoute roles={["ADMINISTRADOR"]}>
+              <TodasLasCompras />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Ruta para manejar rutas no encontradas */}
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
     </AuthProvider>
-    </>
-  )
+  );
 }
 
-export default App
+export default App;

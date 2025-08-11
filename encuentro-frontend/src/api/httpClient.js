@@ -14,7 +14,15 @@ const httpClient = axios.create({
 httpClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
-    if (token) {
+    
+    const publicEndpoints = [
+      '/api/ms-eventos/api/eventos',
+      '/api/ms-eventos/api/evento/:id',
+    ];
+
+    const isPublicEndpoint = publicEndpoints.some((endpoint) => config.url.includes(endpoint));
+
+    if (!isPublicEndpoint && token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
