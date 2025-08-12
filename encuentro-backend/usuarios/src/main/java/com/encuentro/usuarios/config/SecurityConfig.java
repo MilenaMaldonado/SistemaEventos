@@ -46,7 +46,7 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/actuator/**"
                         ).permitAll()
-                        .requestMatchers("/api/usuarios").hasAnyRole("CLIENTE","ADMINSTRADOR")
+                        .requestMatchers("/api/usuarios").hasAnyRole("CLIENTE","ADMINISTRADOR")
                         // Cualquier otra ruta: autenticada
                         .anyRequest().authenticated()
                 )

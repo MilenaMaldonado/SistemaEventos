@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { reportesAPI, usuariosAPI, eventosAPI, notificacionesAPI } from '../api';
+import { reportesAPI, usuariosAPI, eventosAPI, notificacionesAPI, ticketsMetricasAPI } from '../api';
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
@@ -48,8 +48,19 @@ export default function AdminDashboard() {
 
   // Helpers
   const extractPayload = (resp) => {
+    console.log('🔍 Extrayendo payload de respuesta:', resp);
     const data = resp?.data ?? resp;
-    return data?.respuesta ?? data?.data ?? data;
+    
+    // Para el microservicio de tickets, puede venir directamente en data
+    if (data && typeof data === 'object' && (data.totalTickets !== undefined || data.totalIngresos !== undefined)) {
+      console.log('✅ Datos encontrados directamente en data:', data);
+      return data;
+    }
+    
+    // Para otros servicios, puede estar en respuesta o data
+    const payload = data?.respuesta ?? data?.data ?? data;
+    console.log('✅ Payload extraído:', payload);
+    return payload;
   };
 
   const toArray = (payload) => {
@@ -65,64 +76,134 @@ export default function AdminDashboard() {
   const loadDashboardStats = async () => {
     setLoadingStats(true);
     setErrorStats(null);
+    console.log('🔄 Cargando estadísticas del dashboard...');
+    
     try {
-      // Try dashboard metrics
+      // Try dashboard metrics first
+      console.log('📊 Intentando getDashboardMetrics...');
       const resp = await reportesAPI.getDashboardMetrics();
       const payload = extractPayload(resp) || {};
+      console.log('✅ Dashboard metrics response:', payload);
+      
       const nextStats = {
-        totalUsers: payload.totalUsuarios ?? payload.totalUsers ?? 0,
-        totalEvents: payload.totalEventos ?? payload.totalEvents ?? 0,
-        totalTickets: payload.totalTickets ?? payload.ticketsVendidos ?? 0,
-        revenue: payload.revenue ?? payload.ingresos ?? 0,
+        totalUsers: Number(payload.totalUsuarios ?? payload.totalUsers ?? 0),
+        totalEvents: Number(payload.totalEventos ?? payload.totalEvents ?? 0),
+        totalTickets: Number(payload.totalTickets ?? payload.ticketsVendidos ?? 0),
+        revenue: Number(payload.revenue ?? payload.ingresos ?? 0),
       };
 
-      // If some metric is missing, best-effort fill from other endpoints
-      if (!nextStats.totalUsers) {
-        try {
-          const uResp = await usuariosAPI.getAll({ page: 0, size: 50 });
-          const uPayload = extractPayload(uResp);
-          const list = toArray(uPayload);
-          nextStats.totalUsers = list.length || (uPayload?.total || uPayload?.totalElements || 0);
-        } catch (_) {}
-      }
-      if (!nextStats.totalEvents) {
-        try {
-          const eResp = await eventosAPI.getAll({ page: 0, size: 50 });
-          const ePayload = extractPayload(eResp);
-          const list = toArray(ePayload);
-          nextStats.totalEvents = list.length || (ePayload?.total || ePayload?.totalElements || 0);
-        } catch (_) {}
-      }
-
+      console.log('📈 Stats procesadas:', nextStats);
       setStats(nextStats);
     } catch (err) {
-      // Fallback to estadisticas generales
+      console.log('❌ Error en dashboard metrics, intentando fallback...', err);
+      
+      // Fallback: collect stats from individual endpoints
+      const fallbackStats = { totalUsers: 0, totalEvents: 0, totalTickets: 0, revenue: 0 };
+      
+      // Try getting users count
       try {
-        const statsResp = await reportesAPI.getEstadisticasGenerales();
-        const p = extractPayload(statsResp) || {};
-        setStats({
-          totalUsers: p.totalUsuarios ?? 0,
-          totalEvents: p.totalEventos ?? 0,
-          totalTickets: p.totalTickets ?? p.ticketsVendidos ?? 0,
-          revenue: p.ingresos ?? p.revenue ?? 0,
-        });
-      } catch (e2) {
-        setErrorStats(err?.message || 'No se pudieron cargar las métricas del dashboard');
+        console.log('👥 Obteniendo usuarios...');
+        const uResp = await usuariosAPI.getAll({ page: 0, size: 1 });
+        const uPayload = extractPayload(uResp);
+        fallbackStats.totalUsers = uPayload?.total || uPayload?.totalElements || toArray(uPayload).length || 0;
+        console.log('✅ Usuarios encontrados:', fallbackStats.totalUsers);
+      } catch (userErr) {
+        console.log('❌ Error obteniendo usuarios:', userErr?.message);
+      }
+      
+      // Try getting events count
+      try {
+        console.log('📅 Obteniendo eventos...');
+        const eResp = await eventosAPI.getAll({ page: 0, size: 1 });
+        const ePayload = extractPayload(eResp);
+        fallbackStats.totalEvents = ePayload?.total || ePayload?.totalElements || toArray(ePayload).length || 0;
+        console.log('✅ Eventos encontrados:', fallbackStats.totalEvents);
+      } catch (eventErr) {
+        console.log('❌ Error obteniendo eventos:', eventErr?.message);
+      }
+      
+      // Try getting tickets metrics from tickets service
+      try {
+        console.log('🎫 Obteniendo métricas de tickets...');
+        const ticketsResp = await ticketsMetricasAPI.getMetricasGenerales();
+        console.log('🎫 Respuesta completa tickets service:', ticketsResp);
+        
+        const ticketsPayload = extractPayload(ticketsResp) || {};
+        console.log('✅ Métricas de tickets procesadas:', ticketsPayload);
+        
+        // Asegurar que extraemos correctamente los valores numéricos
+        const ticketsCount = Number(ticketsPayload.totalTickets) || 0;
+        const revenue = Number(ticketsPayload.totalIngresos) || 0;
+        
+        console.log('🎫 Valores finales - Tickets:', ticketsCount, 'Revenue:', revenue);
+        
+        fallbackStats.totalTickets = ticketsCount;
+        fallbackStats.revenue = revenue;
+      } catch (ticketsErr) {
+        console.log('❌ Error obteniendo métricas de tickets:', ticketsErr?.message);
+        
+        // Try estadisticas generales as last resort
+        try {
+          console.log('📊 Intentando estadísticas generales...');
+          const statsResp = await reportesAPI.getEstadisticasGenerales();
+          const p = extractPayload(statsResp) || {};
+          console.log('✅ Estadísticas generales:', p);
+          
+          fallbackStats.totalTickets = p.totalTickets ?? p.ticketsVendidos ?? 0;
+          fallbackStats.revenue = p.ingresos ?? p.revenue ?? 0;
+        } catch (statsErr) {
+          console.log('❌ Error en estadísticas generales:', statsErr?.message);
+        }
+      }
+      
+      console.log('📈 Fallback stats finales:', fallbackStats);
+      setStats(fallbackStats);
+      
+      // Only show error if we couldn't get any data at all
+      if (fallbackStats.totalUsers === 0 && fallbackStats.totalEvents === 0 && fallbackStats.totalTickets === 0) {
+        setErrorStats('No se pudieron cargar las métricas. Verifique la conexión con los servicios.');
       }
     } finally {
       setLoadingStats(false);
     }
   };
 
+  // Función específica para probar métricas de tickets
+  const testTicketsMetrics = async () => {
+    console.log('🧪 === PRUEBA MANUAL DE MÉTRICAS DE TICKETS ===');
+    
+    try {
+      // Probar métricas generales
+      console.log('🧪 Probando métricas generales...');
+      const generalResp = await ticketsMetricasAPI.getMetricasGenerales();
+      console.log('🧪 Respuesta general completa:', generalResp);
+      
+      // Probar métricas del mes
+      console.log('🧪 Probando métricas del mes...');
+      const mesResp = await ticketsMetricasAPI.getMetricasDelMes();
+      console.log('🧪 Respuesta del mes completa:', mesResp);
+      
+      console.log('🧪 === FIN DE PRUEBA ===');
+    } catch (error) {
+      console.log('🧪 Error en prueba:', error);
+    }
+  };
+
   const loadUsers = async () => {
     setLoadingUsers(true);
     setErrorUsers(null);
+    console.log('👥 Cargando usuarios...');
+    
     try {
       const resp = await usuariosAPI.getAll({ page: 0, size: 20 });
       const payload = extractPayload(resp);
-      setUsers(toArray(payload));
+      const usersList = toArray(payload);
+      console.log('✅ Usuarios cargados:', usersList.length);
+      setUsers(usersList);
     } catch (err) {
-      setErrorUsers(err?.message || 'No se pudieron cargar los usuarios');
+      console.log('❌ Error cargando usuarios:', err);
+      setErrorUsers(err?.message || 'No se pudieron cargar los usuarios. Verifique la conexión con el servicio.');
+      setUsers([]); // Reset to empty array on error
     } finally {
       setLoadingUsers(false);
     }
@@ -131,12 +212,18 @@ export default function AdminDashboard() {
   const loadEvents = async () => {
     setLoadingEvents(true);
     setErrorEvents(null);
+    console.log('📅 Cargando eventos...');
+    
     try {
       const resp = await eventosAPI.getAll({ page: 0, size: 20 });
       const payload = extractPayload(resp);
-      setEvents(toArray(payload));
+      const eventsList = toArray(payload);
+      console.log('✅ Eventos cargados:', eventsList.length);
+      setEvents(eventsList);
     } catch (err) {
-      setErrorEvents(err?.message || 'No se pudieron cargar los eventos');
+      console.log('❌ Error cargando eventos:', err);
+      setErrorEvents(err?.message || 'No se pudieron cargar los eventos. Verifique la conexión con el servicio.');
+      setEvents([]); // Reset to empty array on error
     } finally {
       setLoadingEvents(false);
     }
@@ -145,12 +232,18 @@ export default function AdminDashboard() {
   const loadNotifications = async () => {
     setLoadingNotifications(true);
     setErrorNotifications(null);
+    console.log('🔔 Cargando notificaciones...');
+    
     try {
       const resp = await notificacionesAPI.getAll({ page: 0, size: 20 });
       const payload = extractPayload(resp);
-      setNotifications(toArray(payload));
+      const notificationsList = toArray(payload);
+      console.log('✅ Notificaciones cargadas:', notificationsList.length);
+      setNotifications(notificationsList);
     } catch (err) {
-      setErrorNotifications(err?.message || 'No se pudieron cargar las notificaciones');
+      console.log('❌ Error cargando notificaciones:', err);
+      setErrorNotifications(err?.message || 'No se pudieron cargar las notificaciones. Verifique la conexión con el servicio.');
+      setNotifications([]); // Reset to empty array on error
     } finally {
       setLoadingNotifications(false);
     }
@@ -160,12 +253,40 @@ export default function AdminDashboard() {
   const generarReporteVentas = async () => {
     setLoadingReport(true);
     setErrorReport(null);
+    console.log('📊 Generando reporte de ventas...', { fechaInicio, fechaFin });
+    
     try {
+      // Try getting report from reports service first
       const resp = await reportesAPI.getVentasPorFecha(fechaInicio, fechaFin);
       const payload = extractPayload(resp);
+      console.log('✅ Reporte de reportes service:', payload);
       setVentasReporte(payload);
     } catch (err) {
-      setErrorReport(err?.message || 'No se pudo generar el reporte');
+      console.log('❌ Error en reportes service, intentando tickets service...', err);
+      
+      // Fallback: try getting metrics from tickets service
+      try {
+        const ticketsResp = await ticketsMetricasAPI.getMetricasPorRango(fechaInicio, fechaFin);
+        const ticketsPayload = extractPayload(ticketsResp) || {};
+        console.log('✅ Métricas de tickets por rango:', ticketsPayload);
+        
+        // Format as report
+        const reportData = {
+          totalVentas: ticketsPayload.totalFacturas ?? 0,
+          totalTickets: ticketsPayload.totalTickets ?? 0,
+          totalIngresos: ticketsPayload.totalIngresos ?? 0,
+          ingresos: ticketsPayload.totalIngresos ?? 0,
+          tickets: ticketsPayload.totalTickets ?? 0,
+          eventos: 0, // No podemos obtener eventos por fecha desde tickets
+          periodo: ticketsPayload.periodo ?? `Del ${fechaInicio} al ${fechaFin}`
+        };
+        
+        console.log('📈 Reporte formateado desde tickets:', reportData);
+        setVentasReporte(reportData);
+      } catch (ticketsErr) {
+        console.log('❌ Error obteniendo métricas de tickets:', ticketsErr);
+        setErrorReport('No se pudo generar el reporte. Verifique la conexión con los servicios.');
+      }
     } finally {
       setLoadingReport(false);
     }
@@ -181,27 +302,31 @@ export default function AdminDashboard() {
     const ciudad = window.prompt('Ciudad:');
     if (!ciudad) return;
 
+    console.log('🎪 Creando evento:', { nombre, fecha, ciudad });
     try {
-      const payload = {
-        nombre,
-        fecha,
-        ciudad,
-      };
+      const payload = { nombre, fecha, ciudad };
       await eventosAPI.create(payload);
+      console.log('✅ Evento creado exitosamente');
+      
+      // Reload events and switch to events tab
       await loadEvents();
       setActiveSection('events');
-      alert('Evento creado correctamente');
+      alert('✅ Evento creado correctamente');
     } catch (err) {
-      alert('Error al crear evento: ' + (err?.message || 'Error desconocido'));
+      console.log('❌ Error creando evento:', err);
+      alert('❌ Error al crear evento: ' + (err?.message || err?.data?.message || 'Error desconocido'));
     }
   };
 
   const handleGenerarReporteDescarga = async () => {
+    console.log('📊 Generando reporte de descarga...', { fechaInicio, fechaFin });
     try {
       // Dispara descarga de Excel por defecto
       await reportesAPI.exportVentasExcel({ fechaInicio, fechaFin });
+      console.log('✅ Reporte descargado exitosamente');
     } catch (err) {
-      alert('Error al exportar reporte: ' + (err?.message || 'Error desconocido'));
+      console.log('❌ Error generando reporte:', err);
+      alert('❌ Error al exportar reporte: ' + (err?.message || err?.data?.message || 'Error desconocido'));
     }
   };
 
@@ -211,13 +336,18 @@ export default function AdminDashboard() {
     const mensaje = window.prompt('Mensaje:');
     if (!mensaje) return;
 
+    console.log('🔔 Enviando notificación:', { titulo, mensaje });
     try {
       await notificacionesAPI.broadcast({ titulo, mensaje, tipo: 'INFO' });
+      console.log('✅ Notificación enviada exitosamente');
+      
+      // Reload notifications and switch to notifications tab
       await loadNotifications();
       setActiveSection('notifications');
-      alert('Notificación enviada');
+      alert('✅ Notificación enviada correctamente');
     } catch (err) {
-      alert('Error al enviar notificación: ' + (err?.message || 'Error desconocido'));
+      console.log('❌ Error enviando notificación:', err);
+      alert('❌ Error al enviar notificación: ' + (err?.message || err?.data?.message || 'Error desconocido'));
     }
   };
 
@@ -616,7 +746,7 @@ export default function AdminDashboard() {
 
             <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
               <h3 className="text-xl font-bold text-white mb-6">Acciones Rápidas</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <button
                   onClick={handleCrearEvento}
                   className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white p-4 rounded-xl font-medium transition-all duration-300 transform hover:scale-105"
@@ -634,6 +764,12 @@ export default function AdminDashboard() {
                   className="bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white p-4 rounded-xl font-medium transition-all duration-300 transform hover:scale-105"
                 >
                   Enviar Notificación
+                </button>
+                <button
+                  onClick={testTicketsMetrics}
+                  className="bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white p-4 rounded-xl font-medium transition-all duration-300 transform hover:scale-105"
+                >
+                  🧪 Test Tickets
                 </button>
               </div>
             </div>

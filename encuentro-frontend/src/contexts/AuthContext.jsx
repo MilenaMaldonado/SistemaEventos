@@ -10,6 +10,7 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true); // Cambiar a true para cargar estado inicial
   const [userName, setUserName] = useState(null);
+  const [isValidating, setIsValidating] = useState(false);
 
   // Función para verificar si el usuario es admin - más flexible
   const isAdmin = () => {
@@ -20,8 +21,10 @@ export function AuthProvider({ children }) {
   };
 
   // Función para auto-logout cuando el token expire o desaparezca
-  const autoLogout = () => {
-    console.log('Auto-logout: Token expirado o eliminado');
+  const autoLogout = (reason = 'desconocida') => {
+    console.log('🔴 AUTO-LOGOUT EJECUTADO - Razón:', reason);
+    console.trace(); // Esto mostrará el stack trace para ver de dónde viene la llamada
+    
     setIsAuthenticated(false);
     setUserRole(null);
     setUserId(null);
@@ -73,46 +76,84 @@ export function AuthProvider({ children }) {
     initializeAuth();
   }, []);
 
-  // Monitorear cambios en localStorage (token eliminado desde otra pestaña)
-  useEffect(() => {
-    const handleStorageChange = (e) => {
-      if (e.key === 'authToken' && e.newValue === null && isAuthenticated) {
-        console.log('Token eliminado desde otra pestaña');
-        autoLogout();
-      }
-    };
+  // COMENTADO: Monitorear cambios en localStorage
+  // useEffect(() => {
+  //   const handleStorageChange = (e) => {
+  //     if (e.key === 'authToken' && e.newValue === null && isAuthenticated) {
+  //       console.log('Token eliminado desde otra pestaña');
+  //       autoLogout('storage-change');
+  //     }
+  //   };
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [isAuthenticated]);
+  //   window.addEventListener('storage', handleStorageChange);
+  //   return () => window.removeEventListener('storage', handleStorageChange);
+  // }, [isAuthenticated]);
 
-  // Verificar periódicamente si el token sigue existiendo
-  useEffect(() => {
-    if (isAuthenticated) {
-      const checkTokenInterval = setInterval(() => {
-        const currentToken = localStorage.getItem('authToken');
-        if (!currentToken && isAuthenticated) {
-          console.log('Token desapareció - auto logout');
-          autoLogout();
-        }
-      }, 5000); // Verificar cada 5 segundos
-
-      return () => clearInterval(checkTokenInterval);
+  // Validar token con el servidor
+  const validateTokenWithServer = async () => {
+    if (isValidating) {
+      console.log('Validación ya en curso, saltando...');
+      return;
     }
-  }, [isAuthenticated]);
 
-  // Escuchar evento de token expirado desde httpClient
-  useEffect(() => {
-    const handleTokenExpired = () => {
-      if (isAuthenticated) {
-        console.log('Evento tokenExpired recibido');
-        autoLogout();
-      }
-    };
+    setIsValidating(true);
+    const currentToken = localStorage.getItem('authToken');
+    
+    if (!currentToken) {
+      console.log('No hay token - auto logout');
+      autoLogout();
+      setIsValidating(false);
+      return;
+    }
 
-    window.addEventListener('tokenExpired', handleTokenExpired);
-    return () => window.removeEventListener('tokenExpired', handleTokenExpired);
-  }, [isAuthenticated]);
+    try {
+      console.log('Validando token con servidor...');
+      await authAPI.validateToken();
+      console.log('✅ Token válido - sesión mantenida');
+    } catch (error) {
+      console.log('❌ Token inválido o expirado - auto logout', error);
+      autoLogout();
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  // COMENTADO: Verificación periódica automática deshabilitada
+  // useEffect(() => {
+  //   let intervalId;
+    
+  //   if (isAuthenticated && !isLoading) {
+  //     console.log('🔄 Iniciando validación periódica del token');
+      
+  //     // Primera validación después de 10 segundos
+  //     const initialTimeout = setTimeout(() => {
+  //       validateTokenWithServer();
+        
+  //       // Después configurar validaciones cada 2 minutos
+  //       intervalId = setInterval(validateTokenWithServer, 120000);
+  //     }, 10000);
+
+  //     return () => {
+  //       clearTimeout(initialTimeout);
+  //       if (intervalId) {
+  //         clearInterval(intervalId);
+  //       }
+  //     };
+  //   }
+  // }, [isAuthenticated, isLoading]);
+
+  // COMENTADO: Escuchar evento de token expirado desde httpClient
+  // useEffect(() => {
+  //   const handleTokenExpired = () => {
+  //     if (isAuthenticated) {
+  //       console.log('Evento tokenExpired recibido');
+  //       autoLogout('token-expired-event');
+  //     }
+  //   };
+
+  //   window.addEventListener('tokenExpired', handleTokenExpired);
+  //   return () => window.removeEventListener('tokenExpired', handleTokenExpired);
+  // }, [isAuthenticated]);
 
   const login = (role, id, token, name) => {
     setIsAuthenticated(true);
@@ -211,12 +252,14 @@ export function AuthProvider({ children }) {
         token,
         isLoading,
         userName,
+        isValidating,
         isAdmin: isAdmin(), // Llamar la función
         user: { cedula: userId, nombre: userName, role: userRole }, // Objeto user para compatibilidad
         login,
         logout,
         register,
         hasRole,
+        validateTokenWithServer, // Exponer función para validación manual
       }}
     >
       {children}

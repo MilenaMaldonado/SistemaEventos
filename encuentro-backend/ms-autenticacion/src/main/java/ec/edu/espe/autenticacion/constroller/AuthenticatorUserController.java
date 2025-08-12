@@ -4,6 +4,7 @@ import ec.edu.espe.autenticacion.DTO.AuthenticatorUserDTO;
 import ec.edu.espe.autenticacion.DTO.ResponseDto;
 import ec.edu.espe.autenticacion.DTO.UsuarioDTO;
 import ec.edu.espe.autenticacion.service.AuthenticatorUserService;
+import ec.edu.espe.autenticacion.utils.JwtService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -14,10 +15,8 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -26,6 +25,9 @@ public class AuthenticatorUserController {
 
     @Autowired
     private AuthenticatorUserService authenticatorUserService;
+    
+    @Autowired
+    private JwtService jwtService;
 
     @PostMapping("/register")
     @Operation(summary = "Registrar nuevo usuario", description = "Registra un nuevo usuario en el sistema")
@@ -56,5 +58,33 @@ public class AuthenticatorUserController {
     })
     public ResponseEntity<ResponseDto> logout(HttpServletRequest request, HttpServletResponse response) {
         return authenticatorUserService.logout(request, response);
+    }
+
+    @PostMapping("/validate-token")
+    @Operation(summary = "Validar token JWT", description = "Valida si un token JWT es válido y no ha expirado")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Token válido"),
+        @ApiResponse(responseCode = "401", description = "Token inválido o expirado")
+    })
+    public ResponseEntity<ResponseDto> validateToken(@RequestHeader("Authorization") String authHeader) {
+        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ResponseDto("Token no proporcionado o formato inválido", false));
+            }
+
+            String token = authHeader.substring(7);
+            boolean isValid = jwtService.isTokenValid(token);
+
+            if (isValid) {
+                return ResponseEntity.ok(new ResponseDto("Token válido", true));
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ResponseDto("Token inválido o expirado", false));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ResponseDto("Error al validar token: " + e.getMessage(), false));
+        }
     }
 }
