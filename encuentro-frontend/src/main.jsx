@@ -5,7 +5,6 @@ import App from './App.jsx'
 import { AuthProvider } from './contexts/AuthContext';
 import { BrowserRouter as Router } from 'react-router-dom';
 
-console.log("main.jsx: Rendering App within AuthProvider");
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

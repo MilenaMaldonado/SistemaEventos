@@ -225,7 +225,7 @@ export default function Profile() {
                 
                 {isAdmin && (
                   <button 
-                    onClick={() => navigate('/admin-dashboard')}
+                    onClick={() => navigate('/admin')}
                     className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/25"
                   >
                     Ir al Dashboard Admin

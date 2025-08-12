@@ -9,8 +9,7 @@ export const API_CONFIG = {
       LOGIN: '/ms-autenticacion/api/auth/login',
       REGISTER: '/ms-autenticacion/api/auth/register',
       REFRESH: '/ms-autenticacion/api/auth/refresh',
-      LOGOUT: '/ms-autenticacion/api/auth/logout',
-      VALIDATE: '/ms-autenticacion/api/auth/validate'
+      LOGOUT: '/ms-autenticacion/api/auth/logout'
     },
     
     // Eventos
@@ -137,7 +136,7 @@ export const getHeaders = (includeAuth = true) => {
   };
   
   if (includeAuth) {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('authToken');
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
@@ -148,7 +147,7 @@ export const getHeaders = (includeAuth = true) => {
 
 // WebSocket Configuration
 export const WEBSOCKET_CONFIG = {
-  BASE_URL: 'http://localhost:8000/api/ms-tickets/ws',
+  BASE_URL: 'http://localhost:8000/ms-tickets/ws',
   ENDPOINTS: {
     ASIENTOS: '/asientos'
   },

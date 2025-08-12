@@ -20,7 +20,7 @@ export default function Login() {
   useEffect(() => {
     if (isAuthenticated) {
       if (isAdmin) {
-        navigate('/admin-dashboard');
+        navigate('/admin');
       } else {
         // Redirigir a la ruta original o al home
         navigate(from);
