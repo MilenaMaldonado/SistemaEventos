@@ -2,6 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { reportesAPI, usuariosAPI, eventosAPI, notificacionesAPI } from '../api';
+import UserForm from '../components/forms/UserForm';
+import EventForm from '../components/forms/EventForm';
+import CitiesManager from '../components/admin/CitiesManager';
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
@@ -33,6 +36,13 @@ export default function AdminDashboard() {
   const [notifications, setNotifications] = useState([]);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [errorNotifications, setErrorNotifications] = useState(null);
+
+  // Form states
+  const [showUserForm, setShowUserForm] = useState(false);
+  const [showEventForm, setShowEventForm] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [editingEvent, setEditingEvent] = useState(null);
+  const [formLoading, setFormLoading] = useState(false);
 
   // Reports (simple range for ventas)
   const todayISO = useMemo(() => new Date().toISOString().slice(0, 10), []);
@@ -173,27 +183,8 @@ export default function AdminDashboard() {
 
   // Quick actions
   const handleCrearEvento = async () => {
-    // Solicitar datos mínimos por prompts para cumplir con la llamada al endpoint
-    const nombre = window.prompt('Nombre del evento:');
-    if (!nombre) return;
-    const fecha = window.prompt('Fecha (YYYY-MM-DD):', todayISO);
-    if (!fecha) return;
-    const ciudad = window.prompt('Ciudad:');
-    if (!ciudad) return;
-
-    try {
-      const payload = {
-        nombre,
-        fecha,
-        ciudad,
-      };
-      await eventosAPI.create(payload);
-      await loadEvents();
-      setActiveSection('events');
-      alert('Evento creado correctamente');
-    } catch (err) {
-      alert('Error al crear evento: ' + (err?.message || 'Error desconocido'));
-    }
+    setActiveSection('events');
+    setShowEventForm(true);
   };
 
   const handleGenerarReporteDescarga = async () => {
@@ -219,6 +210,100 @@ export default function AdminDashboard() {
     } catch (err) {
       alert('Error al enviar notificación: ' + (err?.message || 'Error desconocido'));
     }
+  };
+
+  // User management functions
+  const handleCreateUser = async (userData) => {
+    setFormLoading(true);
+    try {
+      await usuariosAPI.create(userData);
+      await loadUsers();
+      setShowUserForm(false);
+      alert('Usuario creado exitosamente');
+    } catch (err) {
+      alert('Error al crear usuario: ' + (err?.message || 'Error desconocido'));
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleUpdateUser = async (userData) => {
+    setFormLoading(true);
+    try {
+      await usuariosAPI.update(editingUser.id, userData);
+      await loadUsers();
+      setShowUserForm(false);
+      setEditingUser(null);
+      alert('Usuario actualizado exitosamente');
+    } catch (err) {
+      alert('Error al actualizar usuario: ' + (err?.message || 'Error desconocido'));
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm('¿Está seguro de que desea eliminar este usuario?')) return;
+    
+    try {
+      await usuariosAPI.delete(userId);
+      await loadUsers();
+      alert('Usuario eliminado exitosamente');
+    } catch (err) {
+      alert('Error al eliminar usuario: ' + (err?.message || 'Error desconocido'));
+    }
+  };
+
+  const handleEditUser = (user) => {
+    setEditingUser(user);
+    setShowUserForm(true);
+  };
+
+  // Event management functions
+  const handleCreateEvent = async (eventData) => {
+    setFormLoading(true);
+    try {
+      await eventosAPI.create(eventData);
+      await loadEvents();
+      setShowEventForm(false);
+      alert('Evento creado exitosamente');
+    } catch (err) {
+      alert('Error al crear evento: ' + (err?.message || 'Error desconocido'));
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleUpdateEvent = async (eventData) => {
+    setFormLoading(true);
+    try {
+      await eventosAPI.update(editingEvent.id, eventData);
+      await loadEvents();
+      setShowEventForm(false);
+      setEditingEvent(null);
+      alert('Evento actualizado exitosamente');
+    } catch (err) {
+      alert('Error al actualizar evento: ' + (err?.message || 'Error desconocido'));
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleDeleteEvent = async (eventId) => {
+    if (!window.confirm('¿Está seguro de que desea eliminar este evento?')) return;
+    
+    try {
+      await eventosAPI.delete(eventId);
+      await loadEvents();
+      alert('Evento eliminado exitosamente');
+    } catch (err) {
+      alert('Error al eliminar evento: ' + (err?.message || 'Error desconocido'));
+    }
+  };
+
+  const handleEditEvent = (event) => {
+    setEditingEvent(event);
+    setShowEventForm(true);
   };
 
   // Notifications actions
@@ -305,6 +390,16 @@ export default function AdminDashboard() {
         </svg>
       ),
     },
+    {
+      id: 'cities',
+      name: 'Ciudades',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      ),
+    },
   ];
 
   const StatCard = ({ title, value, change, icon, color, loading }) => (
@@ -333,61 +428,104 @@ export default function AdminDashboard() {
   );
 
   const renderUsers = () => (
-    <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xl font-bold text-white">Usuarios</h3>
-        <button
-          onClick={loadUsers}
-          className="text-sm text-white/80 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg"
-        >
-          Refrescar
-        </button>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-bold text-white">Gestión de Usuarios</h3>
+        <div className="space-x-2">
+          <button
+            onClick={() => setShowUserForm(true)}
+            className="text-sm text-white/90 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 px-3 py-1.5 rounded-lg"
+          >
+            Nuevo Usuario
+          </button>
+          <button
+            onClick={loadUsers}
+            className="text-sm text-white/80 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg"
+          >
+            Refrescar
+          </button>
+        </div>
       </div>
+
       {errorUsers && (
-        <div className="text-red-400 text-sm mb-3">{errorUsers}</div>
+        <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+          {errorUsers}
+        </div>
       )}
+
       {loadingUsers ? (
-        <div className="text-white/70">Cargando usuarios...</div>
+        <div className="text-white/70 text-center py-8">Cargando usuarios...</div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead>
-              <tr className="text-white/60 text-left text-sm">
-                <th className="py-2 pr-4">Nombre</th>
-                <th className="py-2 pr-4">Email</th>
-                <th className="py-2 pr-4">Rol</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.id || u.cedula || u.email} className="text-white/90 text-sm border-t border-white/10">
-                  <td className="py-2 pr-4">{u.nombre || `${u.nombres || ''} ${u.apellidos || ''}`.trim() || '—'}</td>
-                  <td className="py-2 pr-4">{u.email || u.correo || '—'}</td>
-                  <td className="py-2 pr-4">{u.rol || u.role || (u.roles && u.roles[0]?.nombre) || '—'}</td>
+        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr className="text-white/60 text-left text-sm">
+                  <th className="py-2 pr-4">Nombre</th>
+                  <th className="py-2 pr-4">Email</th>
+                  <th className="py-2 pr-4">Cédula</th>
+                  <th className="py-2 pr-4">Teléfono</th>
+                  <th className="py-2 pr-4">Estado</th>
+                  <th className="py-2 pr-4">Acciones</th>
                 </tr>
-              ))}
-              {users.length === 0 && (
-                <tr>
-                  <td className="text-white/60 py-4" colSpan={3}>Sin registros</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {users.map((u) => (
+                  <tr key={u.id || u.cedula || u.email} className="text-white/90 text-sm border-t border-white/10">
+                    <td className="py-2 pr-4">{u.nombre || `${u.nombres || ''} ${u.apellidos || ''}`.trim() || '—'}</td>
+                    <td className="py-2 pr-4">{u.email || u.correo || '—'}</td>
+                    <td className="py-2 pr-4">{u.cedula || '—'}</td>
+                    <td className="py-2 pr-4">{u.telefono || '—'}</td>
+                    <td className="py-2 pr-4">
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        u.activo !== false 
+                          ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                          : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                      }`}>
+                        {u.activo !== false ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </td>
+                    <td className="py-2 pr-4">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleEditUser(u)}
+                          className="text-xs text-white/90 bg-white/10 hover:bg-white/20 px-2 py-1 rounded-lg"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(u.id)}
+                          className="text-xs text-red-300 hover:text-red-200 bg-red-500/10 hover:bg-red-500/20 px-2 py-1 rounded-lg"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {users.length === 0 && (
+                  <tr>
+                    <td className="text-white/60 py-4" colSpan={6}>No hay usuarios registrados</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
   );
 
   const renderEvents = () => (
-    <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xl font-bold text-white">Eventos</h3>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-bold text-white">Gestión de Eventos</h3>
         <div className="space-x-2">
           <button
-            onClick={handleCrearEvento}
+            onClick={() => setShowEventForm(true)}
             className="text-sm text-white/90 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 px-3 py-1.5 rounded-lg"
           >
-            Nuevo evento
+            Nuevo Evento
           </button>
           <button
             onClick={loadEvents}
@@ -397,36 +535,73 @@ export default function AdminDashboard() {
           </button>
         </div>
       </div>
+
       {errorEvents && (
-        <div className="text-red-400 text-sm mb-3">{errorEvents}</div>
+        <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+          {errorEvents}
+        </div>
       )}
+
       {loadingEvents ? (
-        <div className="text-white/70">Cargando eventos...</div>
+        <div className="text-white/70 text-center py-8">Cargando eventos...</div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead>
-              <tr className="text-white/60 text-left text-sm">
-                <th className="py-2 pr-4">Nombre</th>
-                <th className="py-2 pr-4">Fecha</th>
-                <th className="py-2 pr-4">Ciudad</th>
-              </tr>
-            </thead>
-            <tbody>
-              {events.map((e) => (
-                <tr key={e.id || e._id || e.nombre} className="text-white/90 text-sm border-t border-white/10">
-                  <td className="py-2 pr-4">{e.nombre || e.titulo || '—'}</td>
-                  <td className="py-2 pr-4">{e.fecha ? new Date(e.fecha).toLocaleDateString() : '—'}</td>
-                  <td className="py-2 pr-4">{e.ciudad || e.lugar || '—'}</td>
+        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr className="text-white/60 text-left text-sm">
+                  <th className="py-2 pr-4">Nombre</th>
+                  <th className="py-2 pr-4">Fecha</th>
+                  <th className="py-2 pr-4">Ciudad</th>
+                  <th className="py-2 pr-4">Capacidad</th>
+                  <th className="py-2 pr-4">Precio</th>
+                  <th className="py-2 pr-4">Estado</th>
+                  <th className="py-2 pr-4">Acciones</th>
                 </tr>
-              ))}
-              {events.length === 0 && (
-                <tr>
-                  <td className="text-white/60 py-4" colSpan={3}>Sin registros</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {events.map((e) => (
+                  <tr key={e.id || e._id || e.nombre} className="text-white/90 text-sm border-t border-white/10">
+                    <td className="py-2 pr-4">{e.nombre || e.titulo || '—'}</td>
+                    <td className="py-2 pr-4">{e.fecha ? new Date(e.fecha).toLocaleDateString() : '—'}</td>
+                    <td className="py-2 pr-4">{e.ciudad || e.lugar || '—'}</td>
+                    <td className="py-2 pr-4">{e.capacidad || e.cupos || '—'}</td>
+                    <td className="py-2 pr-4">{e.precio ? `$${e.precio}` : '—'}</td>
+                    <td className="py-2 pr-4">
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        e.activo !== false 
+                          ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                          : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                      }`}>
+                        {e.activo !== false ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </td>
+                    <td className="py-2 pr-4">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleEditEvent(e)}
+                          className="text-xs text-white/90 bg-white/10 hover:bg-white/20 px-2 py-1 rounded-lg"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => handleDeleteEvent(e.id)}
+                          className="text-xs text-red-300 hover:text-red-200 bg-red-500/10 hover:bg-red-500/20 px-2 py-1 rounded-lg"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {events.length === 0 && (
+                  <tr>
+                    <td className="text-white/60 py-4" colSpan={7}>No hay eventos registrados</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
@@ -640,13 +815,71 @@ export default function AdminDashboard() {
           </div>
         );
       case 'users':
+        if (showUserForm) {
+          return (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-white">Gestión de Usuarios</h3>
+                <button
+                  onClick={() => {
+                    setShowUserForm(false);
+                    setEditingUser(null);
+                  }}
+                  className="text-sm text-white/70 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg"
+                >
+                  Volver a la lista
+                </button>
+              </div>
+              
+              <UserForm
+                user={editingUser}
+                onSubmit={editingUser ? handleUpdateUser : handleCreateUser}
+                onCancel={() => {
+                  setShowUserForm(false);
+                  setEditingUser(null);
+                }}
+                loading={formLoading}
+              />
+            </div>
+          );
+        }
         return renderUsers();
       case 'events':
+        if (showEventForm) {
+          return (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-white">Gestión de Eventos</h3>
+                <button
+                  onClick={() => {
+                    setShowEventForm(false);
+                    setEditingEvent(null);
+                  }}
+                  className="text-sm text-white/70 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg"
+                >
+                  Volver a la lista
+                </button>
+              </div>
+              
+              <EventForm
+                event={editingEvent}
+                onSubmit={editingEvent ? handleUpdateEvent : handleCreateEvent}
+                onCancel={() => {
+                  setShowEventForm(false);
+                  setEditingEvent(null);
+                }}
+                loading={formLoading}
+              />
+            </div>
+          );
+        }
         return renderEvents();
       case 'reports':
         return renderReports();
       case 'notifications':
         return renderNotifications();
+      case 'cities':
+        return <CitiesManager />;
       default:
         return (
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 text-center">
