@@ -9,6 +9,20 @@ export default function Profile() {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editForm, setEditForm] = useState({
+    cedula: '',
+    nombre: '',
+    apellido: '',
+    edad: '',
+    fechaNacimiento: '',
+    direccion: '',
+    telefono: '',
+    correo: ''
+  });
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState(null);
+  const [editSuccess, setEditSuccess] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -17,32 +31,32 @@ export default function Profile() {
         setLoading(false);
         return;
       }
-
       try {
         setLoading(true);
         setError(null);
-        console.log('Buscando usuario con cédula:', user.cedula);
-        
         const response = await usuariosAPI.getUsuarioByCedula(user.cedula);
-        console.log('Respuesta del API de usuarios:', response);
-        
-        // La respuesta del servidor viene directamente sin wrapper
         const userData = response.data || response;
-        
         if (userData && userData.cedula) {
           setUserData(userData);
+          setEditForm({
+            cedula: userData.cedula || '',
+            nombre: userData.nombre || '',
+            apellido: userData.apellido || '',
+            edad: userData.edad || '',
+            fechaNacimiento: userData.fechaNacimiento ? userData.fechaNacimiento.slice(0, 10) : '',
+            direccion: userData.direccion || '',
+            telefono: userData.telefono || '',
+            correo: userData.correo || ''
+          });
         } else {
-          console.error('Respuesta del servidor sin datos válidos:', userData);
           setError('No se encontró información del usuario');
         }
       } catch (error) {
-        console.error('Error fetching user data:', error);
         setError('Error al cargar la información del usuario: ' + (error.message || 'Error desconocido'));
       } finally {
         setLoading(false);
       }
     };
-
     fetchUserData();
   }, [user?.cedula]);
 
@@ -83,13 +97,65 @@ export default function Profile() {
     );
   }
 
+  // Formulario de edición de perfil
+  const handleEditClick = () => {
+    setEditMode(true);
+    setEditError(null);
+    setEditSuccess(false);
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleEditCancel = () => {
+    setEditMode(false);
+    setEditError(null);
+    setEditSuccess(false);
+    // Restaurar datos originales
+    setEditForm({
+      cedula: userData.cedula || '',
+      nombre: userData.nombre || '',
+      apellido: userData.apellido || '',
+      edad: userData.edad || '',
+      fechaNacimiento: userData.fechaNacimiento ? userData.fechaNacimiento.slice(0, 10) : '',
+      direccion: userData.direccion || '',
+      telefono: userData.telefono || '',
+      correo: userData.correo || ''
+    });
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    setEditLoading(true);
+    setEditError(null);
+    setEditSuccess(false);
+    try {
+      // Formatear fechaNacimiento a ISO si es necesario
+      const payload = {
+        ...editForm,
+        edad: Number(editForm.edad),
+        fechaNacimiento: editForm.fechaNacimiento ? new Date(editForm.fechaNacimiento).toISOString() : null
+      };
+      // Usar el endpoint correcto con la cédula
+      await usuariosAPI.update(editForm.cedula, payload);
+      setEditSuccess(true);
+      setEditMode(false);
+      setUserData((prev) => ({ ...prev, ...payload }));
+    } catch (err) {
+      setEditError('Error al actualizar el perfil: ' + (err.message || 'Error desconocido'));
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 p-4">
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/30 rounded-full blur-3xl"></div>
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-500/30 rounded-full blur-3xl"></div>
       </div>
-      
       <div className="relative max-w-4xl mx-auto pt-20">
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl overflow-hidden">
           {/* Header */}
@@ -118,125 +184,167 @@ export default function Profile() {
               </div>
             </div>
           </div>
-
           {/* Content */}
           <div className="p-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Información Personal */}
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-white mb-4">Información Personal</h2>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-white/70 mb-2">Nombre Completo</label>
-                    <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-                      <span className="text-white">
-                        {userData?.nombre && userData?.apellido 
-                          ? `${userData.nombre} ${userData.apellido}`
-                          : userData?.nombre || 'No disponible'
-                        }
-                      </span>
-                    </div>
-                  </div>
-
+            {editMode ? (
+              <form className="max-w-2xl mx-auto space-y-6" onSubmit={handleEditSubmit}>
+                <h2 className="text-xl font-semibold text-white mb-4">Editar Perfil</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-white/70 mb-2">Cédula</label>
-                    <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-                      <span className="text-white">{userData?.cedula || user?.cedula}</span>
-                    </div>
+                    <input type="text" name="cedula" value={editForm.cedula} className="w-full bg-white/10 border border-white/20 rounded-xl p-3 text-white cursor-not-allowed" readOnly disabled />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-medium text-white/70 mb-2">Email</label>
-                    <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-                      <span className="text-white">{userData?.correo || 'No disponible'}</span>
-                    </div>
+                    <label className="block text-sm font-medium text-white/70 mb-2">Nombre</label>
+                    <input type="text" name="nombre" value={editForm.nombre} onChange={handleEditChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white" required />
                   </div>
-
+                  <div>
+                    <label className="block text-sm font-medium text-white/70 mb-2">Apellido</label>
+                    <input type="text" name="apellido" value={editForm.apellido} onChange={handleEditChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-white/70 mb-2">Edad</label>
+                    <input type="number" name="edad" value={editForm.edad} onChange={handleEditChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white" required min="0" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-white/70 mb-2">Fecha de Nacimiento</label>
+                    <input type="date" name="fechaNacimiento" value={editForm.fechaNacimiento} onChange={handleEditChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-white/70 mb-2">Dirección</label>
+                    <input type="text" name="direccion" value={editForm.direccion} onChange={handleEditChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white" />
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-white/70 mb-2">Teléfono</label>
-                    <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-                      <span className="text-white">{userData?.telefono || 'No disponible'}</span>
-                    </div>
+                    <input type="text" name="telefono" value={editForm.telefono} onChange={handleEditChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-white/70 mb-2">Correo</label>
+                    <input type="email" name="correo" value={editForm.correo} onChange={handleEditChange} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white" required />
                   </div>
                 </div>
-              </div>
-
-              {/* Información Adicional */}
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold text-white mb-4">Información Adicional</h2>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-white/70 mb-2">Tipo de Usuario</label>
-                    <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-                      <div className="flex items-center space-x-2">
-                        <div className={`w-3 h-3 rounded-full ${isAdmin ? 'bg-purple-400' : 'bg-cyan-400'}`}></div>
-                        <span className="text-white">{isAdmin ? 'Administrador' : 'Cliente'}</span>
+                {editError && <div className="text-red-400 text-sm mt-2">{editError}</div>}
+                {editSuccess && <div className="text-green-400 text-sm mt-2">¡Perfil actualizado correctamente!</div>}
+                <div className="flex gap-4 mt-6">
+                  <button type="submit" disabled={editLoading} className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300">
+                    {editLoading ? 'Guardando...' : 'Guardar Cambios'}
+                  </button>
+                  <button type="button" onClick={handleEditCancel} className="bg-white/5 hover:bg-white/10 border border-white/10 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300">
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Información Personal */}
+                  <div className="space-y-6">
+                    <h2 className="text-xl font-semibold text-white mb-4">Información Personal</h2>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-white/70 mb-2">Nombre Completo</label>
+                        <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                          <span className="text-white">
+                            {userData?.nombre && userData?.apellido 
+                              ? `${userData.nombre} ${userData.apellido}`
+                              : userData?.nombre || 'No disponible'
+                            }
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-white/70 mb-2">Cédula</label>
+                        <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                          <span className="text-white">{userData?.cedula || user?.cedula}</span>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-white/70 mb-2">Email</label>
+                        <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                          <span className="text-white">{userData?.correo || 'No disponible'}</span>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-white/70 mb-2">Teléfono</label>
+                        <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                          <span className="text-white">{userData?.telefono || 'No disponible'}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-white/70 mb-2">Edad</label>
-                    <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-                      <span className="text-white">{userData?.edad || 'No disponible'} años</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-white/70 mb-2">Fecha de Nacimiento</label>
-                    <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-                      <span className="text-white">
-                        {userData?.fechaNacimiento 
-                          ? new Date(userData.fechaNacimiento).toLocaleDateString('es-ES', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })
-                          : 'No disponible'
-                        }
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-white/70 mb-2">Dirección</label>
-                    <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-                      <span className="text-white">{userData?.direccion || 'No disponible'}</span>
+                  {/* Información Adicional */}
+                  <div className="space-y-6">
+                    <h2 className="text-xl font-semibold text-white mb-4">Información Adicional</h2>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-white/70 mb-2">Tipo de Usuario</label>
+                        <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                          <div className="flex items-center space-x-2">
+                            <div className={`w-3 h-3 rounded-full ${isAdmin ? 'bg-purple-400' : 'bg-cyan-400'}`}></div>
+                            <span className="text-white">{isAdmin ? 'Administrador' : 'Cliente'}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-white/70 mb-2">Edad</label>
+                        <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                          <span className="text-white">{userData?.edad || 'No disponible'} años</span>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-white/70 mb-2">Fecha de Nacimiento</label>
+                        <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                          <span className="text-white">
+                            {userData?.fechaNacimiento 
+                              ? new Date(userData.fechaNacimiento).toLocaleDateString('es-ES', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })
+                              : 'No disponible'
+                            }
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-white/70 mb-2">Dirección</label>
+                        <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                          <span className="text-white">{userData?.direccion || 'No disponible'}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="mt-8 pt-6 border-t border-white/10">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button 
-                  onClick={() => navigate('/')}
-                  className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg hover:shadow-cyan-500/25 flex items-center space-x-2"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                  </svg>
-                  <span>Volver al Inicio</span>
-                </button>
-                
-                {isAdmin && (
-                  <button 
-                    onClick={() => navigate('/admin')}
-                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/25"
-                  >
-                    Ir al Dashboard Admin
-                  </button>
-                )}
-                
-                <button className="bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300">
-                  Editar Perfil
-                </button>
-              </div>
-            </div>
+                {/* Actions */}
+                <div className="mt-8 pt-6 border-t border-white/10">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <button 
+                      onClick={() => navigate('/')}
+                      className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg hover:shadow-cyan-500/25 flex items-center space-x-2"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                      </svg>
+                      <span>Volver al Inicio</span>
+                    </button>
+                    {isAdmin && (
+                      <button 
+                        onClick={() => navigate('/admin')}
+                        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/25"
+                      >
+                        Ir al Dashboard Admin
+                      </button>
+                    )}
+                    <button 
+                      className="bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300"
+                      onClick={handleEditClick}
+                    >
+                      Editar Perfil
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
