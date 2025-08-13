@@ -17,12 +17,22 @@ export default function CitiesManager() {
   const loadCities = async () => {
     setLoading(true);
     setError(null);
+    console.log('🏠 Cargando ciudades...');
+    
     try {
       const response = await eventosAPI.getCiudades();
-      const data = response?.data || response;
-      setCities(Array.isArray(data) ? data : []);
+      console.log('🏠 Respuesta completa ciudades:', response);
+      
+      // Extraer datos según la estructura de respuesta
+      const payload = response?.data || response;
+      const ciudadesList = payload?.respuesta || payload?.data || payload;
+      
+      console.log('✅ Ciudades procesadas:', ciudadesList);
+      setCities(Array.isArray(ciudadesList) ? ciudadesList : []);
     } catch (err) {
+      console.log('❌ Error cargando ciudades:', err);
       setError(err?.message || 'No se pudieron cargar las ciudades');
+      setCities([]);
     } finally {
       setLoading(false);
     }
@@ -45,7 +55,8 @@ export default function CitiesManager() {
   const handleUpdateCity = async (cityData) => {
     setFormLoading(true);
     try {
-      await eventosAPI.updateCiudad(editingCity.id, cityData);
+      const cityId = editingCity.id || editingCity.nombre;
+      await eventosAPI.updateCiudad(cityId, cityData);
       await loadCities();
       setShowForm(false);
       setEditingCity(null);
@@ -145,27 +156,13 @@ export default function CitiesManager() {
               <thead>
                 <tr className="text-white/60 text-left text-sm">
                   <th className="py-2 pr-4">Nombre</th>
-                  <th className="py-2 pr-4">Provincia</th>
-                  <th className="py-2 pr-4">País</th>
-                  <th className="py-2 pr-4">Estado</th>
                   <th className="py-2 pr-4">Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {cities.map((city) => (
-                  <tr key={city.id || city.nombre} className="text-white/90 text-sm border-t border-white/10">
+                {cities.map((city, index) => (
+                  <tr key={city.id || city.nombre || index} className="text-white/90 text-sm border-t border-white/10">
                     <td className="py-2 pr-4">{city.nombre || '—'}</td>
-                    <td className="py-2 pr-4">{city.provincia || '—'}</td>
-                    <td className="py-2 pr-4">{city.pais || 'Ecuador'}</td>
-                    <td className="py-2 pr-4">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        city.activo 
-                          ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-                          : 'bg-red-500/20 text-red-400 border border-red-500/30'
-                      }`}>
-                        {city.activo ? 'Activa' : 'Inactiva'}
-                      </span>
-                    </td>
                     <td className="py-2 pr-4">
                       <div className="flex items-center space-x-2">
                         <button
@@ -175,7 +172,7 @@ export default function CitiesManager() {
                           Editar
                         </button>
                         <button
-                          onClick={() => handleDeleteCity(city.id)}
+                          onClick={() => handleDeleteCity(city.id || city.nombre)}
                           className="text-xs text-red-300 hover:text-red-200 bg-red-500/10 hover:bg-red-500/20 px-2 py-1 rounded-lg"
                         >
                           Eliminar
@@ -186,7 +183,7 @@ export default function CitiesManager() {
                 ))}
                 {cities.length === 0 && (
                   <tr>
-                    <td className="text-white/60 py-4" colSpan={5}>No hay ciudades registradas</td>
+                    <td className="text-white/60 py-4" colSpan={2}>No hay ciudades registradas</td>
                   </tr>
                 )}
               </tbody>

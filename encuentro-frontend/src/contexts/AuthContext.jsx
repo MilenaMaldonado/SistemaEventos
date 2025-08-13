@@ -142,18 +142,18 @@ export function AuthProvider({ children }) {
   //   }
   // }, [isAuthenticated, isLoading]);
 
-  // COMENTADO: Escuchar evento de token expirado desde httpClient
-  // useEffect(() => {
-  //   const handleTokenExpired = () => {
-  //     if (isAuthenticated) {
-  //       console.log('Evento tokenExpired recibido');
-  //       autoLogout('token-expired-event');
-  //     }
-  //   };
+  // Escuchar evento de token expirado desde httpClient
+  useEffect(() => {
+    const handleTokenExpired = (event) => {
+      if (isAuthenticated) {
+        console.log('Evento tokenExpired recibido', event.detail);
+        autoLogout('token-expired-event');
+      }
+    };
 
-  //   window.addEventListener('tokenExpired', handleTokenExpired);
-  //   return () => window.removeEventListener('tokenExpired', handleTokenExpired);
-  // }, [isAuthenticated]);
+    window.addEventListener('tokenExpired', handleTokenExpired);
+    return () => window.removeEventListener('tokenExpired', handleTokenExpired);
+  }, [isAuthenticated]);
 
   const login = (role, id, token, name) => {
     setIsAuthenticated(true);

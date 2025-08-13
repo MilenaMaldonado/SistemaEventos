@@ -54,10 +54,10 @@ export const usuariosAPI = {
     }
   },
 
-  // Crear usuario (Admin)
+  // Crear usuario (Admin) - Usa endpoint de registro
   create: async (userData) => {
     try {
-      const response = await apiRequest.post(API_CONFIG.ENDPOINTS.USUARIOS.CREATE, userData);
+      const response = await apiRequest.post(API_CONFIG.ENDPOINTS.AUTH.REGISTER, userData);
       return response;
     } catch (error) {
       throw error;

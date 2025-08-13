@@ -96,7 +96,9 @@ export const API_CONFIG = {
       MARCAR_LEIDA: '/ms-notificaciones/api/notificaciones/{id}/leida',
       MARCAR_TODAS_LEIDAS: '/ms-notificaciones/api/notificaciones/marcar-todas-leidas',
       DELETE: '/ms-notificaciones/api/notificaciones/{id}',
-      SEND: '/ms-notificaciones/api/notificaciones/enviar'
+      SEND: '/ms-notificaciones/api/notificaciones/enviar',
+      ULTIMAS: '/ms-notificaciones/api/notificaciones/ultimas',
+      PAGINADAS: '/ms-notificaciones/api/notificaciones/paginadas'
     },
     
     // Reportes

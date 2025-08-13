@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function UserForm({ user = null, onSubmit, onCancel, loading = false }) {
+export default function UserForm({ user = null, onSubmit, onCancel, loading = false, serverErrors = null }) {
   const [formData, setFormData] = useState({
     nombres: '',
     apellidos: '',
@@ -9,24 +9,55 @@ export default function UserForm({ user = null, onSubmit, onCancel, loading = fa
     telefono: '',
     direccion: '',
     fechaNacimiento: '',
-    genero: '',
-    activo: true
+    edad: '',
+    password: ''
   });
 
   const [errors, setErrors] = useState({});
+  
+  // Efecto para manejar errores del servidor
+  useEffect(() => {
+    if (serverErrors) {
+      console.log('🔍 UserForm recibió errores del servidor:', serverErrors);
+      
+      // Mapear errores del servidor al estado de errores local
+      const mappedErrors = {};
+      
+      if (serverErrors.respuesta) {
+        // Mapear los nombres de campos del servidor a los nombres locales
+        const fieldMapping = {
+          'nombre': 'nombres',
+          'apellido': 'apellidos',
+          'correo': 'email'
+        };
+        
+        Object.entries(serverErrors.respuesta).forEach(([serverField, errorMessage]) => {
+          const localField = fieldMapping[serverField] || serverField;
+          mappedErrors[localField] = errorMessage;
+          console.log(`🔍 Mapeando error: ${serverField} -> ${localField}: ${errorMessage}`);
+        });
+      }
+      
+      console.log('🔍 Errores mapeados:', mappedErrors);
+      setErrors(mappedErrors);
+    } else {
+      // Si no hay errores del servidor, limpiar errores
+      setErrors({});
+    }
+  }, [serverErrors]);
 
   useEffect(() => {
     if (user) {
       setFormData({
         nombres: user.nombres || user.nombre || '',
-        apellidos: user.apellidos || '',
+        apellidos: user.apellidos || user.apellido || '',
         cedula: user.cedula || '',
         email: user.email || user.correo || '',
         telefono: user.telefono || '',
         direccion: user.direccion || '',
         fechaNacimiento: user.fechaNacimiento ? user.fechaNacimiento.split('T')[0] : '',
-        genero: user.genero || '',
-        activo: user.activo !== undefined ? user.activo : true
+        edad: user.edad || '',
+        password: '' // No cargar password al editar
       });
     }
   }, [user]);
@@ -40,6 +71,10 @@ export default function UserForm({ user = null, onSubmit, onCancel, loading = fa
     if (!formData.email.trim()) newErrors.email = 'El email es requerido';
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email inválido';
     
+    // Password solo es requerido al crear usuario
+    if (!user && !formData.password.trim()) newErrors.password = 'La contraseña es requerida';
+    if (formData.password && formData.password.length < 6) newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
+    
     if (formData.telefono && !/^\d{10}$/.test(formData.telefono.replace(/\D/g, ''))) {
       newErrors.telefono = 'El teléfono debe tener 10 dígitos';
     }
@@ -51,16 +86,64 @@ export default function UserForm({ user = null, onSubmit, onCancel, loading = fa
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
-      onSubmit(formData);
+      // Calculate age from birth date
+      let edad = null;
+      if (formData.fechaNacimiento) {
+        const today = new Date();
+        const birthDate = new Date(formData.fechaNacimiento);
+        edad = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          edad--;
+        }
+      }
+
+      // Map form data to API expected structure
+      const apiData = {
+        cedula: formData.cedula,
+        nombre: formData.nombres,
+        apellido: formData.apellidos,
+        edad: edad || 0,
+        fechaNacimiento: formData.fechaNacimiento ? new Date(formData.fechaNacimiento).toISOString() : null,
+        direccion: formData.direccion,
+        telefono: formData.telefono,
+        correo: formData.email,
+        ...(formData.password && { password: formData.password })
+      };
+      onSubmit(apiData);
     }
+  };
+
+  // Función para calcular la edad
+  const calculateAge = (birthDate) => {
+    if (!birthDate) return '';
+    
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    
+    return age >= 0 ? age : '';
   };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
+    
+    let newFormData = {
+      ...formData,
       [name]: type === 'checkbox' ? checked : value
-    }));
+    };
+    
+    // Si cambia la fecha de nacimiento, calcular automáticamente la edad
+    if (name === 'fechaNacimiento') {
+      newFormData.edad = calculateAge(value);
+    }
+    
+    setFormData(newFormData);
     
     // Limpiar error del campo cuando el usuario empiece a escribir
     if (errors[name]) {
@@ -153,35 +236,34 @@ export default function UserForm({ user = null, onSubmit, onCancel, loading = fa
           </div>
 
           <div>
-            <label className="block text-white/70 text-sm mb-1">Género</label>
-            <select
-              name="genero"
-              value={formData.genero}
+            <label className="block text-white/70 text-sm mb-1">Edad</label>
+            <input
+              type="number"
+              name="edad"
+              value={formData.edad}
               onChange={handleChange}
-              className="w-full bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-white"
-            >
-              <option value="">Seleccione...</option>
-              <option value="M">Masculino</option>
-              <option value="F">Femenino</option>
-              <option value="O">Otro</option>
-            </select>
+              min="0"
+              max="120"
+              className="w-full bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-white/30"
+              placeholder="Edad"
+            />
           </div>
 
           <div>
-            <label className="block text-white/70 text-sm mb-1">Estado</label>
-            <div className="flex items-center space-x-3">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="activo"
-                  checked={formData.activo}
-                  onChange={handleChange}
-                  className="w-4 h-4 text-cyan-500 bg-white/10 border-white/10 rounded focus:ring-cyan-500"
-                />
-                <span className="ml-2 text-white/70">Usuario Activo</span>
-              </label>
-            </div>
+            <label className="block text-white/70 text-sm mb-1">
+              Contraseña {!user && '*'}
+            </label>
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              className={`w-full bg-white/10 border ${errors.password ? 'border-red-400' : 'border-white/10'} rounded-lg px-3 py-2 text-white placeholder-white/30`}
+              placeholder={user ? "Dejar vacío para mantener la actual" : "Ingrese la contraseña"}
+            />
+            {errors.password && <span className="text-red-400 text-xs">{errors.password}</span>}
           </div>
+
         </div>
 
         <div>

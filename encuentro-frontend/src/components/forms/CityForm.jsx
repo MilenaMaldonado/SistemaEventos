@@ -2,10 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 export default function CityForm({ city = null, onSubmit, onCancel, loading = false }) {
   const [formData, setFormData] = useState({
-    nombre: '',
-    provincia: '',
-    pais: 'Ecuador',
-    activo: true
+    nombre: ''
   });
 
   const [errors, setErrors] = useState({});
@@ -13,10 +10,7 @@ export default function CityForm({ city = null, onSubmit, onCancel, loading = fa
   useEffect(() => {
     if (city) {
       setFormData({
-        nombre: city.nombre || '',
-        provincia: city.provincia || '',
-        pais: city.pais || 'Ecuador',
-        activo: city.activo !== undefined ? city.activo : true
+        nombre: city.nombre || ''
       });
     }
   }, [city]);
@@ -25,7 +19,6 @@ export default function CityForm({ city = null, onSubmit, onCancel, loading = fa
     const newErrors = {};
     
     if (!formData.nombre.trim()) newErrors.nombre = 'El nombre de la ciudad es requerido';
-    if (!formData.provincia.trim()) newErrors.provincia = 'La provincia es requerida';
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -51,12 +44,6 @@ export default function CityForm({ city = null, onSubmit, onCancel, loading = fa
     }
   };
 
-  const provinciasEcuador = [
-    'Azuay', 'Bolívar', 'Cañar', 'Carchi', 'Chimborazo', 'Cotopaxi', 'El Oro',
-    'Esmeraldas', 'Galápagos', 'Guayas', 'Imbabura', 'Loja', 'Los Ríos',
-    'Manabí', 'Morona Santiago', 'Napo', 'Orellana', 'Pastaza', 'Pichincha',
-    'Santa Elena', 'Santo Domingo de los Tsáchilas', 'Sucumbíos', 'Tungurahua', 'Zamora Chinchipe'
-  ];
 
   return (
     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
@@ -65,65 +52,17 @@ export default function CityForm({ city = null, onSubmit, onCancel, loading = fa
       </h3>
       
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-white/70 text-sm mb-1">Nombre de la Ciudad *</label>
-            <input
-              type="text"
-              name="nombre"
-              value={formData.nombre}
-              onChange={handleChange}
-              className={`w-full bg-white/10 border ${errors.nombre ? 'border-red-400' : 'border-white/10'} rounded-lg px-3 py-2 text-white placeholder-white/30`}
-              placeholder="Ingrese el nombre de la ciudad"
-            />
-            {errors.nombre && <span className="text-red-400 text-xs">{errors.nombre}</span>}
-          </div>
-
-          <div>
-            <label className="block text-white/70 text-sm mb-1">Provincia *</label>
-            <select
-              name="provincia"
-              value={formData.provincia}
-              onChange={handleChange}
-              className={`w-full bg-white/10 border ${errors.provincia ? 'border-red-400' : 'border-white/10'} rounded-lg px-3 py-2 text-white`}
-            >
-              <option value="">Seleccione una provincia</option>
-              {provinciasEcuador.map((provincia) => (
-                <option key={provincia} value={provincia}>
-                  {provincia}
-                </option>
-              ))}
-            </select>
-            {errors.provincia && <span className="text-red-400 text-xs">{errors.provincia}</span>}
-          </div>
-
-          <div>
-            <label className="block text-white/70 text-sm mb-1">País</label>
-            <input
-              type="text"
-              name="pais"
-              value={formData.pais}
-              onChange={handleChange}
-              className="w-full bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-white"
-              readOnly
-            />
-          </div>
-
-          <div>
-            <label className="block text-white/70 text-sm mb-1">Estado</label>
-            <div className="flex items-center space-x-3">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="activo"
-                  checked={formData.activo}
-                  onChange={handleChange}
-                  className="w-4 h-4 text-cyan-500 bg-white/10 border-white/10 rounded focus:ring-cyan-500"
-                />
-                <span className="ml-2 text-white/70">Ciudad Activa</span>
-              </label>
-            </div>
-          </div>
+        <div>
+          <label className="block text-white/70 text-sm mb-1">Nombre de la Ciudad *</label>
+          <input
+            type="text"
+            name="nombre"
+            value={formData.nombre}
+            onChange={handleChange}
+            className={`w-full bg-white/10 border ${errors.nombre ? 'border-red-400' : 'border-white/10'} rounded-lg px-3 py-2 text-white placeholder-white/30`}
+            placeholder="Ingrese el nombre de la ciudad"
+          />
+          {errors.nombre && <span className="text-red-400 text-xs">{errors.nombre}</span>}
         </div>
 
         <div className="flex justify-end space-x-3 pt-4">

@@ -90,14 +90,40 @@ httpClient.interceptors.request.use(
 //   }
 // );
 
-// Interceptor simplificado sin auto-logout
+// Interceptor con auto-logout para errores 401
 httpClient.interceptors.response.use(
   (response) => response,
   (error) => {
     console.log('❌ Error HTTP:', error.response?.status, error.response?.data);
     
-    // Solo manejar el error sin hacer logout automático
-    const errorMessage = error.response?.data?.message || 
+    // Manejar errores de autenticación (401)
+    if (error.response?.status === 401) {
+      const currentPath = window.location.pathname;
+      const publicPaths = ['/login', '/register', '/', '/eventos'];
+      
+      // Solo hacer auto-logout si no estamos en páginas públicas
+      if (!publicPaths.includes(currentPath)) {
+        console.log('🔴 Error 401 detectado - ejecutando auto logout');
+        
+        // Limpiar tokens
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userData');
+        
+        // Disparar evento personalizado para que AuthContext lo maneje
+        window.dispatchEvent(new CustomEvent('tokenExpired', {
+          detail: { reason: 'unauthorized_401' }
+        }));
+        
+        // Redirigir al login
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 100);
+      }
+    }
+    
+    // Manejar el error
+    const errorMessage = error.response?.data?.mensaje || 
+                        error.response?.data?.message || 
                         error.response?.data?.error || 
                         error.message || 
                         'Error desconocido';

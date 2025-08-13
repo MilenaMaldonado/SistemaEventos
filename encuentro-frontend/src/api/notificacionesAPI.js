@@ -153,6 +153,26 @@ export const notificacionesAPI = {
     } catch (error) {
       throw error;
     }
+  },
+
+  // Obtener las últimas 10 notificaciones
+  getUltimas: async () => {
+    try {
+      const response = await apiRequest.get(API_CONFIG.ENDPOINTS.NOTIFICACIONES.ULTIMAS);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Obtener notificaciones paginadas
+  getPaginadas: async (page = 0, size = 10) => {
+    try {
+      const response = await apiRequest.getWithParams(API_CONFIG.ENDPOINTS.NOTIFICACIONES.PAGINADAS, { page, size });
+      return response;
+    } catch (error) {
+      throw error;
+    }
   }
 };
 

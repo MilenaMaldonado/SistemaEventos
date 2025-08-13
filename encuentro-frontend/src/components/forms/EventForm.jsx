@@ -10,7 +10,6 @@ export default function EventForm({ event = null, onSubmit, onCancel, loading = 
     establecimiento: '',
     capacidad: '',
     precio: '',
-    categoria: '',
     imagenUrl: ''
   });
 
@@ -24,28 +23,53 @@ export default function EventForm({ event = null, onSubmit, onCancel, loading = 
 
   useEffect(() => {
     if (event) {
-      setFormData({
-        nombre: event.nombre || event.titulo || '',
-        fecha: event.fecha ? event.fecha.split('T')[0] : '',
-        hora: event.hora || (event.fecha ? event.fecha.split('T')[1]?.substring(0, 5) : ''),
-        idCiudad: event.idCiudad || event.ciudad?.id || '',
-        establecimiento: event.establecimiento || event.lugar || '',
-        capacidad: event.capacidad || event.cupos || '',
-        precio: event.precio || '',
-        categoria: event.categoria || '',
-        imagenUrl: event.imagenUrl || event.imagen || ''
-      });
+      console.log('🎯 EventForm: Evento recibido para editar:', event);
+      console.log('🎯 EventForm: ID del evento (idEvento):', event.idEvento || event.id || event._id, 'Tipo:', typeof (event.idEvento || event.id || event._id));
+      
+      // Normalizar el evento para tener un id consistente
+      const normalizedEvent = {
+        ...event,
+        id: event.idEvento || event.id || event._id
+      };
+      
+      const mappedData = {
+        nombre: normalizedEvent.nombre || normalizedEvent.titulo || '',
+        fecha: normalizedEvent.fecha ? normalizedEvent.fecha.split('T')[0] : '',
+        hora: normalizedEvent.hora || (normalizedEvent.fecha ? normalizedEvent.fecha.split('T')[1]?.substring(0, 5) : ''),
+        idCiudad: normalizedEvent.idCiudad || normalizedEvent.ciudad?.id || (typeof normalizedEvent.ciudad === 'string' ? normalizedEvent.ciudad : '') || '',
+        establecimiento: normalizedEvent.establecimiento || normalizedEvent.lugar || '',
+        capacidad: normalizedEvent.capacidad || normalizedEvent.cupos || '',
+        precio: normalizedEvent.precio || '',
+        imagenUrl: normalizedEvent.imagenUrl || normalizedEvent.imagen || ''
+      };
+      
+      console.log('🎯 EventForm: Datos mapeados para el formulario:', mappedData);
+      setFormData(mappedData);
     }
   }, [event]);
 
   const loadCiudades = async () => {
     setLoadingCiudades(true);
+    console.log('🏙️ EventForm: Cargando ciudades...');
+    
     try {
       const response = await eventosAPI.getCiudades();
-      const data = response?.data || response;
-      setCiudades(Array.isArray(data) ? data : []);
+      console.log('🏙️ EventForm: Respuesta ciudades:', response);
+      
+      // Extraer datos según la estructura del backend
+      const payload = response?.data || response;
+      const ciudadesList = payload?.respuesta || payload?.data || payload;
+      
+      console.log('🏙️ EventForm: Lista extraída:', ciudadesList);
+      
+      // Ya no necesitamos mapear IDs porque vienen del backend
+      const ciudadesArray = Array.isArray(ciudadesList) ? ciudadesList : [];
+      
+      console.log('✅ EventForm: Ciudades procesadas:', ciudadesArray);
+      setCiudades(ciudadesArray);
     } catch (error) {
-      console.error('Error cargando ciudades:', error);
+      console.error('❌ EventForm: Error cargando ciudades:', error);
+      setCiudades([]);
     } finally {
       setLoadingCiudades(false);
     }
@@ -57,7 +81,7 @@ export default function EventForm({ event = null, onSubmit, onCancel, loading = 
     if (!formData.nombre.trim()) newErrors.nombre = 'El nombre del evento es requerido';
     if (!formData.fecha) newErrors.fecha = 'La fecha es requerida';
     if (!formData.hora) newErrors.hora = 'La hora es requerida';
-    if (!formData.idCiudad) newErrors.idCiudad = 'La ciudad es requerida';
+    if (!formData.idCiudad || formData.idCiudad === '') newErrors.idCiudad = 'La ciudad es requerida';
     if (!formData.establecimiento?.trim()) newErrors.establecimiento = 'El establecimiento es requerido';
     if (!formData.imagenUrl?.trim()) newErrors.imagenUrl = 'La URL de la imagen es requerida';
     if (!formData.capacidad || parseInt(formData.capacidad) <= 0) newErrors.capacidad = 'La capacidad debe ser mayor a 0';
@@ -80,17 +104,20 @@ export default function EventForm({ event = null, onSubmit, onCancel, loading = 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
+      console.log('📝 EventForm: FormData antes de enviar:', formData);
+      
       const eventData = {
         nombre: formData.nombre.trim(),
         fecha: formData.fecha,
         hora: formData.hora,
-        idCiudad: formData.idCiudad ? Number(formData.idCiudad) : undefined,
+        idCiudad: formData.idCiudad && formData.idCiudad !== '' ? Number(formData.idCiudad) : null,
         establecimiento: formData.establecimiento.trim(),
         capacidad: formData.capacidad ? parseInt(formData.capacidad, 10) : undefined,
         precio: formData.precio !== '' ? parseFloat(formData.precio) : undefined,
-        categoria: formData.categoria || undefined,
         imagenUrl: formData.imagenUrl.trim()
       };
+      
+      console.log('🚀 EventForm: Datos enviados al servidor:', eventData);
       onSubmit(eventData);
     }
   };
@@ -128,8 +155,11 @@ export default function EventForm({ event = null, onSubmit, onCancel, loading = 
         {event ? 'Editar Evento' : 'Crear Nuevo Evento'}
       </h3>
       
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Información básica */}
+        <div className="space-y-4">
+          <h4 className="text-lg font-semibold text-white/90 border-b border-white/10 pb-2">Información Básica</h4>
+          
           <div>
             <label className="block text-white/70 text-sm mb-1">Nombre del Evento *</label>
             <input
@@ -143,48 +173,36 @@ export default function EventForm({ event = null, onSubmit, onCancel, loading = 
             {errors.nombre && <span className="text-red-400 text-xs">{errors.nombre}</span>}
           </div>
 
-          <div>
-            <label className="block text-white/70 text-sm mb-1">Categoría</label>
-            <select
-              name="categoria"
-              value={formData.categoria}
-              onChange={handleChange}
-              className="w-full bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-white"
-            >
-              <option value="">Seleccione...</option>
-              <option value="CONCIERTO">Concierto</option>
-              <option value="TEATRO">Teatro</option>
-              <option value="DEPORTE">Deporte</option>
-              <option value="CONFERENCIA">Conferencia</option>
-              <option value="EXPOSICION">Exposición</option>
-              <option value="FESTIVAL">Festival</option>
-              <option value="OTRO">Otro</option>
-            </select>
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-white/70 text-sm mb-1">Fecha *</label>
+              <input
+                type="date"
+                name="fecha"
+                value={formData.fecha}
+                onChange={handleChange}
+                className={`w-full bg-white/10 border ${errors.fecha ? 'border-red-400' : 'border-white/10'} rounded-lg px-3 py-2 text-white`}
+              />
+              {errors.fecha && <span className="text-red-400 text-xs">{errors.fecha}</span>}
+            </div>
 
-          <div>
-            <label className="block text-white/70 text-sm mb-1">Fecha *</label>
-            <input
-              type="date"
-              name="fecha"
-              value={formData.fecha}
-              onChange={handleChange}
-              className={`w-full bg-white/10 border ${errors.fecha ? 'border-red-400' : 'border-white/10'} rounded-lg px-3 py-2 text-white`}
-            />
-            {errors.fecha && <span className="text-red-400 text-xs">{errors.fecha}</span>}
+            <div>
+              <label className="block text-white/70 text-sm mb-1">Hora *</label>
+              <input
+                type="time"
+                name="hora"
+                value={formData.hora}
+                onChange={handleChange}
+                className={`w-full bg-white/10 border ${errors.hora ? 'border-red-400' : 'border-white/10'} rounded-lg px-3 py-2 text-white`}
+              />
+              {errors.hora && <span className="text-red-400 text-xs">{errors.hora}</span>}
+            </div>
           </div>
+        </div>
 
-          <div>
-            <label className="block text-white/70 text-sm mb-1">Hora</label>
-            <input
-              type="time"
-              name="hora"
-              value={formData.hora}
-              onChange={handleChange}
-              className="w-full bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-white"
-            />
-            {errors.hora && <span className="text-red-400 text-xs">{errors.hora}</span>}
-          </div>
+        {/* Ubicación */}
+        <div className="space-y-4">
+          <h4 className="text-lg font-semibold text-white/90 border-b border-white/10 pb-2">Ubicación</h4>
 
           <div>
             <label className="block text-white/70 text-sm mb-1">Ciudad *</label>
@@ -197,51 +215,15 @@ export default function EventForm({ event = null, onSubmit, onCancel, loading = 
               >
                 <option value="">Seleccione una ciudad</option>
                 {ciudades.map((ciudad) => (
-                  <option key={ciudad.id || ciudad._id || ciudad.nombre} value={ciudad.id || ciudad._id || ''}>
+                  <option key={ciudad.id} value={ciudad.id}>
                     {ciudad.nombre}
                   </option>
                 ))}
               </select>
-              <button
-                type="button"
-                onClick={handleCrearCiudad}
-                className="px-3 py-2 bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white rounded-lg text-sm"
-                title="Crear nueva ciudad"
-              >
-                +
-              </button>
+             
             </div>
             {errors.idCiudad && <span className="text-red-400 text-xs">{errors.idCiudad}</span>}
             {loadingCiudades && <span className="text-white/50 text-xs">Cargando ciudades...</span>}
-          </div>
-
-          <div>
-            <label className="block text-white/70 text-sm mb-1">Capacidad *</label>
-            <input
-              type="number"
-              name="capacidad"
-              value={formData.capacidad}
-              onChange={handleChange}
-              min="1"
-              className={`w-full bg-white/10 border ${errors.capacidad ? 'border-red-400' : 'border-white/10'} rounded-lg px-3 py-2 text-white placeholder-white/30`}
-              placeholder="Número de asientos"
-            />
-            {errors.capacidad && <span className="text-red-400 text-xs">{errors.capacidad}</span>}
-          </div>
-
-          <div>
-            <label className="block text-white/70 text-sm mb-1">Precio</label>
-            <input
-              type="number"
-              name="precio"
-              value={formData.precio}
-              onChange={handleChange}
-              min="0"
-              step="0.01"
-              className={`w-full bg-white/10 border ${errors.precio ? 'border-red-400' : 'border-white/10'} rounded-lg px-3 py-2 text-white placeholder-white/30`}
-              placeholder="0.00"
-            />
-            {errors.precio && <span className="text-red-400 text-xs">{errors.precio}</span>}
           </div>
 
           <div>
@@ -251,26 +233,60 @@ export default function EventForm({ event = null, onSubmit, onCancel, loading = 
               name="establecimiento"
               value={formData.establecimiento}
               onChange={handleChange}
-              className="w-full bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-white/30"
+              className={`w-full bg-white/10 border ${errors.establecimiento ? 'border-red-400' : 'border-white/10'} rounded-lg px-3 py-2 text-white placeholder-white/30`}
               placeholder="Ej. Coliseo Rumiñahui"
             />
             {errors.establecimiento && <span className="text-red-400 text-xs">{errors.establecimiento}</span>}
           </div>
         </div>
 
-        
-        
-        <div>
-          <label className="block text-white/70 text-sm mb-1">URL de Imagen</label>
-          <input
-            type="url"
-            name="imagenUrl"
-            value={formData.imagenUrl}
-            onChange={handleChange}
-            className="w-full bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-white/30"
-            placeholder="https://ejemplo.com/imagen.jpg"
-          />
-          {errors.imagenUrl && <span className="text-red-400 text-xs">{errors.imagenUrl}</span>}
+        {/* Detalles del evento */}
+        <div className="space-y-4">
+          <h4 className="text-lg font-semibold text-white/90 border-b border-white/10 pb-2">Detalles del Evento</h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-white/70 text-sm mb-1">Capacidad *</label>
+              <input
+                type="number"
+                name="capacidad"
+                value={formData.capacidad}
+                onChange={handleChange}
+                min="1"
+                className={`w-full bg-white/10 border ${errors.capacidad ? 'border-red-400' : 'border-white/10'} rounded-lg px-3 py-2 text-white placeholder-white/30`}
+                placeholder="Número de asientos"
+              />
+              {errors.capacidad && <span className="text-red-400 text-xs">{errors.capacidad}</span>}
+            </div>
+
+            <div>
+              <label className="block text-white/70 text-sm mb-1">Precio</label>
+              <input
+                type="number"
+                name="precio"
+                value={formData.precio}
+                onChange={handleChange}
+                min="0"
+                step="0.01"
+                className={`w-full bg-white/10 border ${errors.precio ? 'border-red-400' : 'border-white/10'} rounded-lg px-3 py-2 text-white placeholder-white/30`}
+                placeholder="0.00"
+              />
+              {errors.precio && <span className="text-red-400 text-xs">{errors.precio}</span>}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-white/70 text-sm mb-1">URL de Imagen *</label>
+            <input
+              type="url"
+              name="imagenUrl"
+              value={formData.imagenUrl}
+              onChange={handleChange}
+              className={`w-full bg-white/10 border ${errors.imagenUrl ? 'border-red-400' : 'border-white/10'} rounded-lg px-3 py-2 text-white placeholder-white/30`}
+              placeholder="https://ejemplo.com/imagen.jpg"
+            />
+            {errors.imagenUrl && <span className="text-red-400 text-xs">{errors.imagenUrl}</span>}
+          </div>
         </div>
 
         <div className="flex justify-end space-x-3 pt-4">

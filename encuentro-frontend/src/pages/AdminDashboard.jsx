@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-
-import { reportesAPI, usuariosAPI, eventosAPI, notificacionesAPI } from '../api';
 import { UserForm, EventForm } from '../components/forms';
 import CitiesManager from '../components/admin/CitiesManager';
 
@@ -35,10 +33,16 @@ export default function AdminDashboard() {
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [errorEvents, setErrorEvents] = useState(null);
 
+  // Cities
+  const [cities, setCities] = useState([]);
+  const [loadingCities, setLoadingCities] = useState(false);
+
   // Notifications
   const [notifications, setNotifications] = useState([]);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [errorNotifications, setErrorNotifications] = useState(null);
+  const [notificationsPage, setNotificationsPage] = useState(0);
+  const [notificationsTotalPages, setNotificationsTotalPages] = useState(0);
 
   // Form states
   const [showUserForm, setShowUserForm] = useState(false);
@@ -46,6 +50,7 @@ export default function AdminDashboard() {
   const [editingUser, setEditingUser] = useState(null);
   const [editingEvent, setEditingEvent] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
+  const [userFormErrors, setUserFormErrors] = useState(null);
 
   // Reports (simple range for ventas)
   const todayISO = useMemo(() => new Date().toISOString().slice(0, 10), []);
@@ -60,6 +65,28 @@ export default function AdminDashboard() {
   const [ventasReporte, setVentasReporte] = useState(null);
 
   // Helpers
+  const getCityNameById = (cityId) => {
+    if (!cityId) return '—';
+    
+    console.log('🔍 Buscando ciudad con ID:', cityId, 'en ciudades disponibles:', cities);
+    
+    // Buscar ciudad por ID (número o string)
+    const city = cities.find(c => 
+      c.id === cityId || 
+      c.id === Number(cityId) || 
+      Number(c.id) === Number(cityId)
+    );
+    
+    console.log('🏙️ Ciudad encontrada:', city);
+    
+    if (city) {
+      return city.nombre;
+    } else {
+      console.warn('⚠️ No se encontró ciudad con ID:', cityId);
+      return '—'; // Si no encuentra la ciudad, muestra un guión
+    }
+  };
+
   const extractPayload = (resp) => {
     console.log('🔍 Extrayendo payload de respuesta:', resp);
     const data = resp?.data ?? resp;
@@ -232,6 +259,8 @@ export default function AdminDashboard() {
       const payload = extractPayload(resp);
       const eventsList = toArray(payload);
       console.log('✅ Eventos cargados:', eventsList.length);
+      console.log('📋 Primer evento (estructura completa):', eventsList[0]);
+      console.log('📋 IDs disponibles en eventos:', eventsList.map(e => ({ idEvento: e.idEvento, id: e.id, _id: e._id, nombre: e.nombre })));
       setEvents(eventsList);
     } catch (err) {
       console.log('❌ Error cargando eventos:', err);
@@ -242,21 +271,66 @@ export default function AdminDashboard() {
     }
   };
 
-  const loadNotifications = async () => {
-    setLoadingNotifications(true);
-    setErrorNotifications(null);
-    console.log('🔔 Cargando notificaciones...');
+  const loadCities = async () => {
+    setLoadingCities(true);
+    console.log('🏙️ AdminDashboard: Cargando ciudades...');
     
     try {
-      const resp = await notificacionesAPI.getAll({ page: 0, size: 20 });
+      const resp = await eventosAPI.getCiudades();
       const payload = extractPayload(resp);
-      const notificationsList = toArray(payload);
-      console.log('✅ Notificaciones cargadas:', notificationsList.length);
-      setNotifications(notificationsList);
+      const ciudadesList = payload?.respuesta || payload?.data || payload;
+      
+      console.log('🏙️ AdminDashboard: Respuesta de ciudades:', payload);
+      console.log('🏙️ AdminDashboard: Lista de ciudades extraída:', ciudadesList);
+      
+      // Ya no necesitamos mapear IDs porque vienen del backend
+      const ciudadesArray = Array.isArray(ciudadesList) ? ciudadesList : [];
+      
+      console.log('✅ AdminDashboard: Ciudades procesadas:', ciudadesArray);
+      setCities(ciudadesArray);
+    } catch (err) {
+      console.log('❌ AdminDashboard: Error cargando ciudades:', err);
+      setCities([]);
+    } finally {
+      setLoadingCities(false);
+    }
+  };
+
+  const loadNotifications = async (page = 0) => {
+    setLoadingNotifications(true);
+    setErrorNotifications(null);
+    console.log(`🔔 Cargando notificaciones página ${page}...`);
+    
+    try {
+      // Usar el nuevo endpoint paginado
+      const resp = await notificacionesAPI.getPaginadas(page, 10);
+      console.log('🔔 Respuesta completa de notificaciones:', resp);
+      
+      const payload = extractPayload(resp);
+      
+      if (payload && payload.content) {
+        // Respuesta paginada de Spring Boot
+        const notificationsList = toArray(payload.content);
+        const totalPages = payload.totalPages || 0;
+        
+        console.log('✅ Notificaciones paginadas cargadas:', notificationsList.length);
+        console.log('📄 Total páginas:', totalPages, 'Página actual:', page);
+        
+        setNotifications(notificationsList);
+        setNotificationsTotalPages(totalPages);
+        setNotificationsPage(page);
+      } else {
+        console.log('❌ Estructura de respuesta inesperada:', payload);
+        setNotifications([]);
+        setNotificationsTotalPages(0);
+        setNotificationsPage(0);
+      }
     } catch (err) {
       console.log('❌ Error cargando notificaciones:', err);
       setErrorNotifications(err?.message || 'No se pudieron cargar las notificaciones. Verifique la conexión con el servicio.');
-      setNotifications([]); // Reset to empty array on error
+      setNotifications([]);
+      setNotificationsTotalPages(0);
+      setNotificationsPage(0);
     } finally {
       setLoadingNotifications(false);
     }
@@ -347,38 +421,36 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleEnviarNotificacion = async () => {
-    const titulo = window.prompt('Título de notificación:', 'Aviso general');
-    if (!titulo) return;
-    const mensaje = window.prompt('Mensaje:');
-    if (!mensaje) return;
-
-    console.log('🔔 Enviando notificación:', { titulo, mensaje });
-    try {
-      await notificacionesAPI.broadcast({ titulo, mensaje, tipo: 'INFO' });
-      console.log('✅ Notificación enviada exitosamente');
-      
-      // Reload notifications and switch to notifications tab
-      await loadNotifications();
-      setActiveSection('notifications');
-      alert('✅ Notificación enviada correctamente');
-    } catch (err) {
-      console.log('❌ Error enviando notificación:', err);
-      alert('❌ Error al enviar notificación: ' + (err?.message || err?.data?.message || 'Error desconocido'));
-    }
-  };
 
   // User management functions
   const handleCreateUser = async (userData) => {
     setFormLoading(true);
+    setUserFormErrors(null); // Limpiar errores previos
+    
     try {
       await usuariosAPI.create(userData);
       await loadUsers();
+      await loadDashboardStats(); // Recargar estadísticas después de crear
       setShowUserForm(false);
-      // Mostrar notificación de éxito
       showSuccessMessage('Usuario creado exitosamente');
     } catch (err) {
-      showErrorMessage('Error al crear usuario: ' + (err?.message || 'Error desconocido'));
+      console.log('❌ Error completo del servidor:', err);
+      
+      // Verificar si el error tiene la estructura del servidor
+      if (err?.response?.data && err.response.data.mensaje) {
+        console.log('🔍 Error del servidor:', err.response.data);
+        
+        // Si hay errores específicos de campos
+        if (err.response.data.respuesta && typeof err.response.data.respuesta === 'object') {
+          setUserFormErrors(err.response.data);
+        } else {
+          // Error general sin campos específicos (ej: "Usuario ya registrado")
+          showErrorMessage(err.response.data.mensaje);
+        }
+      } else {
+        // Error genérico
+        showErrorMessage('Error al crear usuario: ' + (err?.message || 'Error desconocido'));
+      }
     } finally {
       setFormLoading(false);
     }
@@ -386,14 +458,33 @@ export default function AdminDashboard() {
 
   const handleUpdateUser = async (userData) => {
     setFormLoading(true);
+    setUserFormErrors(null); // Limpiar errores previos
+    
     try {
-      await usuariosAPI.update(editingUser.id, userData);
+      const userId = editingUser.id || editingUser.cedula;
+      await usuariosAPI.update(userId, userData);
       await loadUsers();
       setShowUserForm(false);
       setEditingUser(null);
       showSuccessMessage('Usuario actualizado exitosamente');
     } catch (err) {
-      showErrorMessage('Error al actualizar usuario: ' + (err?.message || 'Error desconocido'));
+      console.log('❌ Error completo del servidor:', err);
+      
+      // Verificar si el error tiene la estructura del servidor
+      if (err?.response?.data && err.response.data.mensaje) {
+        console.log('🔍 Error del servidor:', err.response.data);
+        
+        // Si hay errores específicos de campos
+        if (err.response.data.respuesta && typeof err.response.data.respuesta === 'object') {
+          setUserFormErrors(err.response.data);
+        } else {
+          // Error general sin campos específicos (ej: "Usuario ya registrado")
+          showErrorMessage(err.response.data.mensaje);
+        }
+      } else {
+        // Error genérico
+        showErrorMessage('Error al actualizar usuario: ' + (err?.message || 'Error desconocido'));
+      }
     } finally {
       setFormLoading(false);
     }
@@ -405,6 +496,7 @@ export default function AdminDashboard() {
     try {
       await usuariosAPI.delete(userId);
       await loadUsers();
+      await loadDashboardStats(); // Recargar estadísticas después de eliminar
       showSuccessMessage('Usuario eliminado exitosamente');
     } catch (err) {
       showErrorMessage('Error al eliminar usuario: ' + (err?.message || 'Error desconocido'));
@@ -413,6 +505,7 @@ export default function AdminDashboard() {
 
   const handleEditUser = (user) => {
     setEditingUser(user);
+    setUserFormErrors(null); // Limpiar errores al abrir formulario de edición
     setShowUserForm(true);
   };
 
@@ -433,13 +526,35 @@ export default function AdminDashboard() {
 
   const handleUpdateEvent = async (eventData) => {
     setFormLoading(true);
+    
+    // Obtener el ID correcto del evento (debe ser idEvento según el backend)
+    const eventId = editingEvent.idEvento || editingEvent.id || editingEvent._id;
+    
+    console.log('🔄 AdminDashboard: Evento completo para editar:', editingEvent);
+    console.log('🔄 AdminDashboard: ID del evento obtenido (idEvento):', eventId, 'Tipo:', typeof eventId);
+    console.log('🔄 AdminDashboard: Datos recibidos del formulario:', eventData);
+    
+    if (!eventId) {
+      showErrorMessage('Error: No se pudo obtener el ID del evento para actualizar');
+      setFormLoading(false);
+      return;
+    }
+    
+    // Limpiar campos nulos que puedan causar problemas
+    const cleanEventData = Object.fromEntries(
+      Object.entries(eventData).filter(([key, value]) => value !== null && value !== undefined)
+    );
+    
+    console.log('🔄 AdminDashboard: Datos limpiados a enviar:', cleanEventData);
+    
     try {
-      await eventosAPI.update(editingEvent.id, eventData);
+      await eventosAPI.update(eventId, cleanEventData);
       await loadEvents();
       setShowEventForm(false);
       setEditingEvent(null);
       showSuccessMessage('Evento actualizado exitosamente');
     } catch (err) {
+      console.error('❌ AdminDashboard: Error al actualizar evento:', err);
       showErrorMessage('Error al actualizar evento: ' + (err?.message || 'Error desconocido'));
     } finally {
       setFormLoading(false);
@@ -459,6 +574,8 @@ export default function AdminDashboard() {
   };
 
   const handleEditEvent = (event) => {
+    console.log('✏️ AdminDashboard: Evento seleccionado para editar:', event);
+    console.log('✏️ AdminDashboard: ID del evento:', event.id, 'Tipo:', typeof event.id);
     setEditingEvent(event);
     setShowEventForm(true);
   };
@@ -494,12 +611,36 @@ export default function AdminDashboard() {
     }
     if (activeSection === 'events' && events.length === 0 && !loadingEvents) {
       loadEvents();
+      if (cities.length === 0 && !loadingCities) {
+        loadCities();
+      }
     }
     if (activeSection === 'notifications' && notifications.length === 0 && !loadingNotifications) {
-      loadNotifications();
+      setNotificationsPage(0); // Reiniciar a página 0
+      loadNotifications(0); // Cargar primera página
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSection]);
+
+  // Auto-refresh para notificaciones cada 1 minuto
+  useEffect(() => {
+    let interval;
+    
+    if (activeSection === 'notifications') {
+      console.log('🔄 Iniciando auto-refresh de notificaciones cada 1 minuto');
+      interval = setInterval(() => {
+        console.log('🔄 Auto-refresh: Recargando notificaciones...');
+        loadNotifications(notificationsPage);
+      }, 60000); // 60 segundos
+    }
+    
+    return () => {
+      if (interval) {
+        console.log('🔄 Deteniendo auto-refresh de notificaciones');
+        clearInterval(interval);
+      }
+    };
+  }, [activeSection, notificationsPage]);
 
   const menuItems = [
     {
@@ -590,7 +731,10 @@ export default function AdminDashboard() {
         <h3 className="text-xl font-bold text-white">Gestión de Usuarios</h3>
         <div className="space-x-2">
           <button
-            onClick={() => setShowUserForm(true)}
+            onClick={() => {
+              setUserFormErrors(null); // Limpiar errores al crear nuevo usuario
+              setShowUserForm(true);
+            }}
             className="text-sm text-white/90 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 px-3 py-1.5 rounded-lg"
           >
             Nuevo Usuario
@@ -622,26 +766,18 @@ export default function AdminDashboard() {
                   <th className="py-2 pr-4">Email</th>
                   <th className="py-2 pr-4">Cédula</th>
                   <th className="py-2 pr-4">Teléfono</th>
-                  <th className="py-2 pr-4">Estado</th>
+                  <th className="py-2 pr-4">Fecha Nacimiento</th>
                   <th className="py-2 pr-4">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map((u) => (
                   <tr key={u.id || u.cedula || u.email} className="text-white/90 text-sm border-t border-white/10">
-                    <td className="py-2 pr-4">{u.nombre || `${u.nombres || ''} ${u.apellidos || ''}`.trim() || '—'}</td>
+                    <td className="py-2 pr-4">{u.nombre || u.apellido ? `${u.nombre || ''} ${u.apellido || ''}`.trim() : `${u.nombres || ''} ${u.apellidos || ''}`.trim() || '—'}</td>
                     <td className="py-2 pr-4">{u.email || u.correo || '—'}</td>
                     <td className="py-2 pr-4">{u.cedula || '—'}</td>
                     <td className="py-2 pr-4">{u.telefono || '—'}</td>
-                    <td className="py-2 pr-4">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        u.activo !== false 
-                          ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-                          : 'bg-red-500/20 text-red-400 border border-red-500/30'
-                      }`}>
-                        {u.activo !== false ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </td>
+                    <td className="py-2 pr-4">{u.fechaNacimiento ? new Date(u.fechaNacimiento).toLocaleDateString() : '—'}</td>
                     <td className="py-2 pr-4">
                       <div className="flex items-center space-x-2">
                         <button
@@ -651,7 +787,7 @@ export default function AdminDashboard() {
                           Editar
                         </button>
                         <button
-                          onClick={() => handleDeleteUser(u.id)}
+                          onClick={() => handleDeleteUser(u.id || u.cedula)}
                           className="text-xs text-red-300 hover:text-red-200 bg-red-500/10 hover:bg-red-500/20 px-2 py-1 rounded-lg"
                         >
                           Eliminar
@@ -707,45 +843,73 @@ export default function AdminDashboard() {
             <table className="min-w-full">
               <thead>
                 <tr className="text-white/60 text-left text-sm">
-                  <th className="py-2 pr-4">Nombre</th>
-                  <th className="py-2 pr-4">Fecha</th>
-                  <th className="py-2 pr-4">Ciudad</th>
-                  <th className="py-2 pr-4">Capacidad</th>
-                  <th className="py-2 pr-4">Precio</th>
-                  <th className="py-2 pr-4">Estado</th>
-                  <th className="py-2 pr-4">Acciones</th>
+                  <th className="py-3 pr-4 font-medium">Evento</th>
+                  <th className="py-3 pr-4 font-medium">Fecha & Hora</th>
+                  <th className="py-3 pr-4 font-medium">Ubicación</th>
+                  <th className="py-3 pr-4 font-medium">Capacidad</th>
+                  <th className="py-3 pr-4 font-medium">Precio</th>
+                  <th className="py-3 pr-4 font-medium">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {events.map((e) => (
-                  <tr key={e.id || e._id || e.nombre} className="text-white/90 text-sm border-t border-white/10">
-                    <td className="py-2 pr-4">{e.nombre || e.titulo || '—'}</td>
-                    <td className="py-2 pr-4">{e.fecha ? new Date(e.fecha).toLocaleDateString() : '—'}</td>
-                    <td className="py-2 pr-4">{e.ciudad || e.lugar || '—'}</td>
-                    <td className="py-2 pr-4">{e.capacidad || e.cupos || '—'}</td>
-                    <td className="py-2 pr-4">{e.precio ? `$${e.precio}` : '—'}</td>
-                    <td className="py-2 pr-4">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        e.activo !== false 
-                          ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-                          : 'bg-red-500/20 text-red-400 border border-red-500/30'
-                      }`}>
-                        {e.activo !== false ? 'Activo' : 'Inactivo'}
-                      </span>
+                  <tr key={e.idEvento || e.id || e._id || e.nombre} className="text-white/90 text-sm border-t border-white/10 hover:bg-white/5 transition-colors">
+                    <td className="py-4 pr-4">
+                      <div className="flex flex-col">
+                        <div className="font-medium text-white">{e.nombre || e.titulo || '—'}</div>
+                        {e.establecimiento && <div className="text-xs text-white/60 mt-1">{e.establecimiento}</div>}
+                      </div>
                     </td>
-                    <td className="py-2 pr-4">
+                    <td className="py-4 pr-4">
+                      <div className="flex flex-col">
+                        <div className="text-white">{e.fecha ? new Date(e.fecha).toLocaleDateString() : '—'}</div>
+                        {e.hora && <div className="text-xs text-white/60 mt-1">{e.hora}</div>}
+                      </div>
+                    </td>
+                    <td className="py-4 pr-4">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-cyan-400 rounded-full"></div>
+                        <span>{getCityNameById(e.idCiudad)}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 pr-4">
+                      <div className="flex items-center space-x-2">
+                        <svg className="w-4 h-4 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <span>{e.capacidad || e.cupos || '—'}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 pr-4">
+                      {e.precio ? (
+                        <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-lg text-xs font-medium">
+                          ${e.precio}
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 bg-gray-500/20 text-gray-400 rounded-lg text-xs">
+                          Gratis
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-4 pr-4">
                       <div className="flex items-center space-x-2">
                         <button
                           onClick={() => handleEditEvent(e)}
-                          className="text-xs text-white/90 bg-white/10 hover:bg-white/20 px-2 py-1 rounded-lg"
+                          className="p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200"
+                          title="Editar evento"
                         >
-                          Editar
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
                         </button>
                         <button
-                          onClick={() => handleDeleteEvent(e.id)}
-                          className="text-xs text-red-300 hover:text-red-200 bg-red-500/10 hover:bg-red-500/20 px-2 py-1 rounded-lg"
+                          onClick={() => handleDeleteEvent(e.idEvento || e.id || e._id)}
+                          className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all duration-200"
+                          title="Eliminar evento"
                         >
-                          Eliminar
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
                         </button>
                       </div>
                     </td>
@@ -753,7 +917,22 @@ export default function AdminDashboard() {
                 ))}
                 {events.length === 0 && (
                   <tr>
-                    <td className="text-white/60 py-4" colSpan={7}>No hay eventos registrados</td>
+                    <td className="text-center py-12" colSpan={6}>
+                      <div className="flex flex-col items-center space-y-3">
+                        <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center">
+                          <svg className="w-6 h-6 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <div className="text-white/60">No hay eventos registrados</div>
+                        <button
+                          onClick={() => setShowEventForm(true)}
+                          className="text-xs text-cyan-400 hover:text-cyan-300 underline"
+                        >
+                          Crear el primer evento
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -835,19 +1014,8 @@ export default function AdminDashboard() {
     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-xl font-bold text-white">Notificaciones</h3>
-        <div className="space-x-2">
-          <button
-            onClick={handleEnviarNotificacion}
-            className="text-sm text-white/90 bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 px-3 py-1.5 rounded-lg"
-          >
-            Enviar notificación
-          </button>
-          <button
-            onClick={loadNotifications}
-            className="text-sm text-white/80 hover:text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg"
-          >
-            Refrescar
-          </button>
+        <div className="text-white/60 text-sm">
+          Actualización automática cada minuto
         </div>
       </div>
       {errorNotifications && (
@@ -857,34 +1025,170 @@ export default function AdminDashboard() {
         <div className="text-white/70">Cargando notificaciones...</div>
       ) : (
         <div className="space-y-3">
-          {notifications.map((n) => (
-            <div key={n.id} className="flex items-start justify-between bg-white/5 border border-white/10 rounded-xl p-4">
-              <div>
-                <div className="text-white font-medium">{n.titulo || n.title || 'Notificación'}</div>
-                <div className="text-white/80 text-sm">{n.mensaje || n.message || '—'}</div>
-                <div className="text-white/50 text-xs mt-1">{n.fecha ? new Date(n.fecha).toLocaleString() : ''}</div>
-              </div>
-              <div className="flex items-center gap-2">
-                {!n.leida && (
+          {notifications.map((n) => {
+            // Función para obtener el icono según el tipo
+            const getTypeIcon = (tipo) => {
+              switch(tipo) {
+                case 'LOGIN':
+                  return (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                    </svg>
+                  );
+                case 'EVENTO':
+                  return (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  );
+                case 'CIUDAD':
+                  return (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  );
+                default:
+                  return (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM9.707 14.707a1 1 0 01-1.414 0L5 11.414V9a2 2 0 012-2h2.414l3.293 3.293a1 1 0 010 1.414z" />
+                    </svg>
+                  );
+              }
+            };
+
+            // Función para obtener el color según el tipo
+            const getTypeColor = (tipo) => {
+              switch(tipo) {
+                case 'LOGIN': return 'text-green-400';
+                case 'EVENTO': return 'text-blue-400';
+                case 'CIUDAD': return 'text-purple-400';
+                default: return 'text-white/60';
+              }
+            };
+
+            return (
+              <div key={n.id} className="flex items-start justify-between bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-all duration-200">
+                <div className="flex items-start space-x-3 flex-1">
+                  <div className={`p-2 rounded-lg bg-white/10 ${getTypeColor(n.tipo)}`}>
+                    {getTypeIcon(n.tipo)}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <span className={`text-xs px-2 py-1 rounded-full bg-white/10 ${getTypeColor(n.tipo)} font-medium`}>
+                        {n.tipo || 'SISTEMA'}
+                      </span>
+                      <span className="text-white/50 text-xs">
+                        ID: {n.id}
+                      </span>
+                    </div>
+                    <div className="text-white/90 text-sm mb-1">{n.mensaje || '—'}</div>
+                    <div className="text-white/50 text-xs">
+                      {n.fecha ? new Date(n.fecha).toLocaleString('es-ES', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                      }) : ''}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 ml-4">
+                  {!n.leida && (
+                    <button
+                      onClick={() => marcarNotificacionLeida(n.id)}
+                      className="text-xs text-white/90 bg-white/10 hover:bg-white/20 px-2 py-1 rounded-lg transition-all duration-200"
+                    >
+                      Marcar leída
+                    </button>
+                  )}
                   <button
-                    onClick={() => marcarNotificacionLeida(n.id)}
-                    className="text-xs text-white/90 bg-white/10 hover:bg-white/20 px-2 py-1 rounded-lg"
+                    onClick={() => eliminarNotificacion(n.id)}
+                    className="text-xs text-red-300 hover:text-red-200 bg-red-500/10 hover:bg-red-500/20 px-2 py-1 rounded-lg transition-all duration-200"
                   >
-                    Marcar leída
+                    Eliminar
                   </button>
-                )}
-                <button
-                  onClick={() => eliminarNotificacion(n.id)}
-                  className="text-xs text-red-300 hover:text-red-200 bg-red-500/10 hover:bg-red-500/20 px-2 py-1 rounded-lg"
-                >
-                  Eliminar
-                </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           {notifications.length === 0 && (
-            <div className="text-white/60">Sin notificaciones</div>
+            <div className="text-center py-8">
+              <div className="w-12 h-12 mx-auto mb-3 bg-white/10 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM9.707 14.707a1 1 0 01-1.414 0L5 11.414V9a2 2 0 012-2h2.414l3.293 3.293a1 1 0 010 1.414z" />
+                </svg>
+              </div>
+              <div className="text-white/60">Sin notificaciones</div>
+            </div>
           )}
+        </div>
+      )}
+      
+      {/* Controles de paginación */}
+      {notificationsTotalPages > 1 && (
+        <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
+          <div className="text-white/60 text-sm">
+            Página {notificationsPage + 1} de {notificationsTotalPages}
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => loadNotifications(notificationsPage - 1)}
+              disabled={notificationsPage === 0 || loadingNotifications}
+              className="px-3 py-1.5 text-sm text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Anterior
+            </button>
+            
+            {/* Números de página */}
+            <div className="flex items-center space-x-1">
+              {Array.from({ length: Math.min(notificationsTotalPages, 5) }, (_, i) => {
+                let pageNumber;
+                if (notificationsTotalPages <= 5) {
+                  pageNumber = i;
+                } else if (notificationsPage < 3) {
+                  pageNumber = i;
+                } else if (notificationsPage >= notificationsTotalPages - 2) {
+                  pageNumber = notificationsTotalPages - 5 + i;
+                } else {
+                  pageNumber = notificationsPage - 2 + i;
+                }
+                
+                return (
+                  <button
+                    key={pageNumber}
+                    onClick={() => loadNotifications(pageNumber)}
+                    disabled={loadingNotifications}
+                    className={`px-2 py-1 text-sm rounded transition-all duration-200 ${
+                      pageNumber === notificationsPage
+                        ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white'
+                        : 'text-white/70 hover:text-white hover:bg-white/10'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {pageNumber + 1}
+                  </button>
+                );
+              })}
+            </div>
+            
+            <button
+              onClick={() => loadNotifications(notificationsPage + 1)}
+              disabled={notificationsPage >= notificationsTotalPages - 1 || loadingNotifications}
+              className="px-3 py-1.5 text-sm text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Información cuando solo hay una página */}
+      {notificationsTotalPages <= 1 && notifications.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-white/10">
+          <div className="text-white/60 text-sm text-center">
+            Mostrando {notifications.length} notificaciones
+          </div>
         </div>
       )}
     </div>
@@ -962,12 +1266,6 @@ export default function AdminDashboard() {
                   Generar Reporte
                 </button>
                 <button
-                  onClick={handleEnviarNotificacion}
-                  className="bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white p-4 rounded-xl font-medium transition-all duration-300 transform hover:scale-105"
-                >
-                  Enviar Notificación
-                </button>
-                <button
                   onClick={testTicketsMetrics}
                   className="bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white p-4 rounded-xl font-medium transition-all duration-300 transform hover:scale-105"
                 >
@@ -1000,8 +1298,10 @@ export default function AdminDashboard() {
                 onCancel={() => {
                   setShowUserForm(false);
                   setEditingUser(null);
+                  setUserFormErrors(null); // Limpiar errores al cancelar
                 }}
                 loading={formLoading}
+                serverErrors={userFormErrors}
               />
             </div>
           );
