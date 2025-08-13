@@ -74,6 +74,7 @@ public class CiudadService {
 
     private CiudadDTO mapToDTO(Ciudad ciudad) {
         CiudadDTO dto = new CiudadDTO();
+        dto.setId(ciudad.getId());
         dto.setNombre(ciudad.getNombre());
         return dto;
     }

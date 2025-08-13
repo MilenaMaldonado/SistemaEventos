@@ -12,6 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -195,5 +198,78 @@ public class TicketService {
     private void publishSeatUpdate(Long idEvento, Asiento a) {
         ws.convertAndSend("/topic/eventos/" + idEvento + "/asientos",
                 new SeatUpdateEvent(idEvento, a.getNumero(), a.getEstado(), a.getHoldUntil()));
+    }
+
+    // Métricas generales
+    public MetricasDTO getMetricasGenerales() {
+        System.out.println("=== DEBUGGING MÉTRICAS GENERALES ===");
+        
+        Long totalTickets = facturaRepo.countAllTickets();
+        BigDecimal totalIngresos = facturaRepo.sumAllTotals();
+        Long totalFacturas = facturaRepo.count();
+        
+        System.out.println("Resultados queries generales:");
+        System.out.println("Total tickets (todos los tiempos): " + totalTickets);
+        System.out.println("Total ingresos (todos los tiempos): " + totalIngresos);
+        System.out.println("Total facturas (todos los tiempos): " + totalFacturas);
+        System.out.println("====================================");
+        
+        return MetricasDTO.builder()
+                .totalTickets(totalTickets != null ? totalTickets : 0L)
+                .totalFacturas(totalFacturas != null ? totalFacturas : 0L)
+                .totalIngresos(totalIngresos != null ? totalIngresos : BigDecimal.ZERO)
+                .periodo("Todos los tiempos")
+                .build();
+    }
+
+    // Métricas del mes actual
+    public MetricasDTO getMetricasDelMes() {
+        LocalDate now = LocalDate.now();
+        LocalDate startOfMonth = now.withDayOfMonth(1);
+        LocalDate nextMonth = startOfMonth.plusMonths(1);
+        
+        Instant startDate = startOfMonth.atStartOfDay().toInstant(ZoneOffset.UTC);
+        Instant endDate = nextMonth.atStartOfDay().toInstant(ZoneOffset.UTC); // Primer día del próximo mes
+        
+        System.out.println("=== DEBUGGING MÉTRICAS DEL MES ===");
+        System.out.println("Fecha actual: " + now);
+        System.out.println("Inicio del mes: " + startOfMonth);
+        System.out.println("Fin del mes (próximo mes): " + nextMonth);
+        System.out.println("StartDate (UTC): " + startDate);
+        System.out.println("EndDate (UTC): " + endDate);
+        
+        Long totalTickets = facturaRepo.countTicketsByDateRange(startDate, endDate);
+        BigDecimal totalIngresos = facturaRepo.sumTotalByDateRange(startDate, endDate);
+        Long totalFacturas = facturaRepo.countFacturasByDateRange(startDate, endDate);
+        
+        System.out.println("Resultados queries:");
+        System.out.println("Total tickets: " + totalTickets);
+        System.out.println("Total ingresos: " + totalIngresos);
+        System.out.println("Total facturas: " + totalFacturas);
+        System.out.println("===============================");
+        
+        return MetricasDTO.builder()
+                .totalTickets(totalTickets != null ? totalTickets : 0L)
+                .totalFacturas(totalFacturas != null ? totalFacturas : 0L)
+                .totalIngresos(totalIngresos != null ? totalIngresos : BigDecimal.ZERO)
+                .periodo("Mes actual (" + now.getMonth().name() + " " + now.getYear() + ")")
+                .build();
+    }
+
+    // Métricas por rango de fechas personalizado
+    public MetricasDTO getMetricasPorRango(LocalDate fechaInicio, LocalDate fechaFin) {
+        Instant startDate = fechaInicio.atStartOfDay().toInstant(ZoneOffset.UTC);
+        Instant endDate = fechaFin.atTime(23, 59, 59).toInstant(ZoneOffset.UTC);
+        
+        Long totalTickets = facturaRepo.countTicketsByDateRange(startDate, endDate);
+        BigDecimal totalIngresos = facturaRepo.sumTotalByDateRange(startDate, endDate);
+        Long totalFacturas = facturaRepo.countFacturasByDateRange(startDate, endDate);
+        
+        return MetricasDTO.builder()
+                .totalTickets(totalTickets)
+                .totalFacturas(totalFacturas)
+                .totalIngresos(totalIngresos)
+                .periodo("Del " + fechaInicio + " al " + fechaFin)
+                .build();
     }
 }

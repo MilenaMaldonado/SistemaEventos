@@ -9,7 +9,8 @@ export const API_CONFIG = {
       LOGIN: '/ms-autenticacion/api/auth/login',
       REGISTER: '/ms-autenticacion/api/auth/register',
       REFRESH: '/ms-autenticacion/api/auth/refresh',
-      LOGOUT: '/ms-autenticacion/api/auth/logout'
+      LOGOUT: '/ms-autenticacion/api/auth/logout',
+      VALIDATE_TOKEN: '/ms-autenticacion/api/auth/validate-token'
     },
     
     // Eventos
@@ -49,7 +50,10 @@ export const API_CONFIG = {
       TICKETS_POR_EVENTO: '/ms-tickets/api/tickets-clientes/evento/{idEvento}',
       TICKETS_POR_CLIENTE: '/ms-tickets/api/tickets-clientes/cliente/{cedula}',
       TICKETS_POR_EVENTO_Y_CLIENTE: '/ms-tickets/api/tickets-clientes/evento/{idEvento}/cliente/{cedula}',
-      VALIDATE_TICKET: '/ms-tickets/api/tickets-clientes/{id}/validate'
+      VALIDATE_TICKET: '/ms-tickets/api/tickets-clientes/{id}/validate',
+      METRICAS: '/ms-tickets/api/metricas',
+      METRICAS_MES: '/ms-tickets/api/metricas/mes',
+      METRICAS_RANGO: '/ms-tickets/api/metricas/rango'
     },
     
     // Asientos
@@ -92,7 +96,9 @@ export const API_CONFIG = {
       MARCAR_LEIDA: '/ms-notificaciones/api/notificaciones/{id}/leida',
       MARCAR_TODAS_LEIDAS: '/ms-notificaciones/api/notificaciones/marcar-todas-leidas',
       DELETE: '/ms-notificaciones/api/notificaciones/{id}',
-      SEND: '/ms-notificaciones/api/notificaciones/enviar'
+      SEND: '/ms-notificaciones/api/notificaciones/enviar',
+      ULTIMAS: '/ms-notificaciones/api/notificaciones/ultimas',
+      PAGINADAS: '/ms-notificaciones/api/notificaciones/paginadas'
     },
     
     // Reportes
@@ -102,7 +108,8 @@ export const API_CONFIG = {
       ASISTENCIA: '/ms-reportes/api/reportes/asistencia/{eventoId}',
       VENTAS_POR_EVENTO: '/ms-reportes/api/reportes/ventas/evento/{eventoId}',
       VENTAS_POR_FECHA: '/ms-reportes/api/reportes/ventas/fecha',
-      ESTADISTICAS_GENERALES: '/ms-reportes/api/reportes/estadisticas'
+      ESTADISTICAS_GENERALES: '/ms-reportes/api/reportes/estadisticas',
+      DASHBOARD_METRICS: '/ms-reportes/api/reportes/dashboard'
     },
     
     // Roles (si existe)

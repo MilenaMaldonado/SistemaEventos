@@ -1,0 +1,12 @@
+/* Estilos específicos para la pantalla Gestión de Eventos */
+@import './AdminShared.css';
+
+/* Scope de la página para personalizaciones futuras sin afectar otras vistas */
+.gestion-eventos {
+  /* Espaciado adicional opcional en desktop */
+}
+
+/* Ejemplos de personalización (descomentarlos si se requieren)
+.gestion-eventos .col-fecha { white-space: nowrap; }
+.gestion-eventos .col-acciones { min-width: 180px; }
+*/

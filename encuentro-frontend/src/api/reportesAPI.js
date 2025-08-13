@@ -147,7 +147,7 @@ export const reportesAPI = {
   // Obtener métricas del dashboard
   getDashboardMetrics: async (params = {}) => {
     try {
-      const response = await apiRequest.getWithParams(`${API_CONFIG.ENDPOINTS.REPORTES.BASE}/dashboard`, params);
+      const response = await apiRequest.getWithParams(API_CONFIG.ENDPOINTS.REPORTES.DASHBOARD_METRICS, params);
       return response;
     } catch (error) {
       throw error;

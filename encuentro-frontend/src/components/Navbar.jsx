@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import NotificationBell from './NotificationBell';
 
 export default function Navbar() {
   // ✅ TODOS LOS HOOKS SE LLAMAN SIEMPRE AL INICIO
@@ -118,6 +119,9 @@ export default function Navbar() {
 
           {/* Desktop Auth Section */}
           <div className="hidden md:flex items-center space-x-4">
+            {isAuthenticated && (
+              <NotificationBell />
+            )}
             {!isAuthenticated ? (
               <>
                 <Link
@@ -159,7 +163,10 @@ export default function Navbar() {
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden">
+          <div className="md:hidden flex items-center gap-2">
+            {isAuthenticated && (
+              <NotificationBell />
+            )}
             <button
               onClick={toggleMobileMenu}
               className="text-white/70 hover:text-white hover:bg-white/10 p-2 rounded-lg transition-all duration-200"
@@ -262,6 +269,13 @@ export default function Navbar() {
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
                           Gestionar Usuarios
+                        </Link>
+                        <Link
+                          to="/admin/ciudades"
+                          className="block text-white/70 hover:text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition-all duration-200"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          Gestionar Ciudades
                         </Link>
                         <Link
                           to="/admin/tickets"
