@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { eventosAPI } from '../../api';
+import eventosAPI from '../../api/eventosAPI';
 
 export default function EventForm({ event = null, onSubmit, onCancel, loading = false }) {
   const [formData, setFormData] = useState({
@@ -61,14 +61,15 @@ export default function EventForm({ event = null, onSubmit, onCancel, loading = 
     if (!formData.nombre.trim()) newErrors.nombre = 'El nombre del evento es requerido';
     if (!formData.fecha) newErrors.fecha = 'La fecha es requerida';
     if (!formData.ciudad) newErrors.ciudad = 'La ciudad es requerida';
-    if (!formData.capacidad || formData.capacidad <= 0) newErrors.capacidad = 'La capacidad debe ser mayor a 0';
-    if (formData.precio && formData.precio < 0) newErrors.precio = 'El precio no puede ser negativo';
+    if (!formData.capacidad || parseInt(formData.capacidad) <= 0) newErrors.capacidad = 'La capacidad debe ser mayor a 0';
+    if (formData.precio && parseFloat(formData.precio) < 0) newErrors.precio = 'El precio no puede ser negativo';
     
     // Validar que la fecha no sea anterior a hoy
     if (formData.fecha) {
       const today = new Date();
+      today.setHours(0, 0, 0, 0);
       const eventDate = new Date(formData.fecha);
-      if (eventDate < today.setHours(0, 0, 0, 0)) {
+      if (eventDate < today) {
         newErrors.fecha = 'La fecha del evento no puede ser anterior a hoy';
       }
     }
@@ -110,14 +111,15 @@ export default function EventForm({ event = null, onSubmit, onCancel, loading = 
 
   const handleCrearCiudad = async () => {
     const nombreCiudad = window.prompt('Nombre de la nueva ciudad:');
-    if (!nombreCiudad) return;
+    if (!nombreCiudad?.trim()) return;
     
     try {
-      await eventosAPI.createCiudad({ nombre: nombreCiudad });
+      await eventosAPI.createCiudad({ nombre: nombreCiudad.trim() });
       await loadCiudades();
-      setFormData(prev => ({ ...prev, ciudad: nombreCiudad }));
+      setFormData(prev => ({ ...prev, ciudad: nombreCiudad.trim() }));
       alert('Ciudad creada exitosamente');
     } catch (error) {
+      console.error('Error al crear ciudad:', error);
       alert('Error al crear ciudad: ' + (error?.message || 'Error desconocido'));
     }
   };

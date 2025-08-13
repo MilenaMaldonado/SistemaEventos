@@ -36,7 +36,10 @@ export default function GestionCiudades() {
     cargarCiudades();
   }, []);
 
-  const limpiarFormulario = () => setForm({ id: null, nombre: '' });
+  const limpiarFormulario = () => {
+    setForm({ id: null, nombre: '' });
+    setError(null);
+  };
 
   const onChange = (e) => {
     const { name, value } = e.target;
@@ -47,6 +50,12 @@ export default function GestionCiudades() {
     e.preventDefault();
     if (!form.nombre?.trim()) {
       setError('El nombre de la ciudad es obligatorio');
+      return;
+    }
+    
+    // Validar que el nombre tenga al menos 2 caracteres
+    if (form.nombre.trim().length < 2) {
+      setError('El nombre de la ciudad debe tener al menos 2 caracteres');
       return;
     }
     setSaving(true);
@@ -131,6 +140,14 @@ export default function GestionCiudades() {
 
         {/* Formulario */}
         <form onSubmit={crearActualizar} className="admin-card">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold text-white">
+              {form.id ? `Editando Ciudad: ${form.nombre}` : 'Crear Nueva Ciudad'}
+            </h3>
+            {form.id && (
+              <p className="text-white/60 text-sm mt-1">Modifica el nombre de la ciudad y haz clic en "Actualizar"</p>
+            )}
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
               <label className="block text-sm text-white/70 mb-1">Nombre</label>
@@ -152,13 +169,21 @@ export default function GestionCiudades() {
               >
                 {form.id ? (saving ? 'Actualizando...' : 'Actualizar') : (saving ? 'Creando...' : 'Crear')}
               </button>
-              {form.id && (
+              {form.id ? (
                 <button
                   type="button"
                   onClick={limpiarFormulario}
                   className="admin-btn"
                 >
                   Cancelar
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={limpiarFormulario}
+                  className="admin-btn"
+                >
+                  Limpiar
                 </button>
               )}
             </div>
@@ -210,9 +235,13 @@ export default function GestionCiudades() {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => editar(c)}
-                            className="px-3 py-1.5 rounded-lg text-white/90 bg-white/10 hover:bg-white/20 text-sm"
+                            className={`px-3 py-1.5 rounded-lg text-sm ${
+                              form.id === (c.id ?? c._id ?? c.codigo) 
+                                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' 
+                                : 'text-white/90 bg-white/10 hover:bg-white/20'
+                            }`}
                           >
-                            Editar
+                            {form.id === (c.id ?? c._id ?? c.codigo) ? 'Editando...' : 'Editar'}
                           </button>
                           <button
                             onClick={() => eliminar(c)}

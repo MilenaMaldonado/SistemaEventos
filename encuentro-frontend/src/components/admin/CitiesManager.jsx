@@ -34,9 +34,9 @@ export default function CitiesManager() {
       await eventosAPI.createCiudad(cityData);
       await loadCities();
       setShowForm(false);
-      alert('Ciudad creada exitosamente');
+      showSuccessMessage('Ciudad creada exitosamente');
     } catch (err) {
-      alert('Error al crear ciudad: ' + (err?.message || 'Error desconocido'));
+      showErrorMessage('Error al crear ciudad: ' + (err?.message || 'Error desconocido'));
     } finally {
       setFormLoading(false);
     }
@@ -49,23 +49,23 @@ export default function CitiesManager() {
       await loadCities();
       setShowForm(false);
       setEditingCity(null);
-      alert('Ciudad actualizada exitosamente');
+      showSuccessMessage('Ciudad actualizada exitosamente');
     } catch (err) {
-      alert('Error al actualizar ciudad: ' + (err?.message || 'Error desconocido'));
+      showErrorMessage('Error al actualizar ciudad: ' + (err?.message || 'Error desconocido'));
     } finally {
       setFormLoading(false);
     }
   };
 
   const handleDeleteCity = async (cityId) => {
-    if (!window.confirm('¿Está seguro de que desea eliminar esta ciudad?')) return;
+    if (!confirmDelete('¿Está seguro de que desea eliminar esta ciudad?', 'Esta acción no se puede deshacer.')) return;
     
     try {
       await eventosAPI.deleteCiudad(cityId);
       await loadCities();
-      alert('Ciudad eliminada exitosamente');
+      showSuccessMessage('Ciudad eliminada exitosamente');
     } catch (err) {
-      alert('Error al eliminar ciudad: ' + (err?.message || 'Error desconocido'));
+      showErrorMessage('Error al eliminar ciudad: ' + (err?.message || 'Error desconocido'));
     }
   };
 
@@ -196,4 +196,125 @@ export default function CitiesManager() {
       )}
     </div>
   );
+
+  // Helper functions for better UX
+  const showSuccessMessage = (message) => {
+    // Crear notificación de éxito
+    const notification = document.createElement('div');
+    notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full';
+    notification.innerHTML = `
+      <div class="flex items-center space-x-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span>${message}</span>
+      </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animar entrada
+    setTimeout(() => {
+      notification.classList.remove('translate-x-full');
+    }, 100);
+    
+    // Remover después de 3 segundos
+    setTimeout(() => {
+      notification.classList.add('translate-x-full');
+      setTimeout(() => {
+        document.body.removeChild(notification);
+      }, 300);
+    }, 3000);
+  };
+
+  const showErrorMessage = (message) => {
+    // Crear notificación de error
+    const notification = document.createElement('div');
+    notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full';
+    notification.innerHTML = `
+      <div class="flex items-center space-x-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+        <span>${message}</span>
+      </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animar entrada
+    setTimeout(() => {
+      notification.classList.remove('translate-x-full');
+    }, 100);
+    
+    // Remover después de 5 segundos
+    setTimeout(() => {
+      notification.classList.add('translate-x-full');
+      setTimeout(() => {
+        document.body.removeChild(notification);
+      }, 300);
+    }, 5000);
+  };
+
+  const confirmDelete = (title, message) => {
+    return new Promise((resolve) => {
+      // Crear modal de confirmación
+      const modal = document.createElement('div');
+      modal.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center';
+      modal.innerHTML = `
+        <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 max-w-md w-full mx-4 transform transition-all duration-300 scale-95 opacity-0">
+          <div class="text-center">
+            <div class="w-16 h-16 mx-auto mb-4 bg-red-500/20 rounded-full flex items-center justify-center">
+              <svg class="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+              </svg>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">${title}</h3>
+            <p class="text-white/70 mb-6">${message}</p>
+            <div class="flex space-x-3">
+              <button id="cancel-btn" class="flex-1 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-colors">
+                Cancelar
+              </button>
+              <button id="confirm-btn" class="flex-1 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors">
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      
+      // Animar entrada
+      setTimeout(() => {
+        modal.querySelector('.bg-white\\/10').classList.remove('scale-95', 'opacity-0');
+      }, 100);
+      
+      // Event listeners
+      modal.querySelector('#cancel-btn').onclick = () => {
+        modal.querySelector('.bg-white\\/10').classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+          document.body.removeChild(modal);
+          resolve(false);
+        }, 300);
+      };
+      
+      modal.querySelector('#confirm-btn').onclick = () => {
+        modal.querySelector('.bg-white\\/10').classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+          document.body.removeChild(modal);
+          resolve(true);
+        }, 300);
+      };
+      
+      // Cerrar con ESC
+      const handleEsc = (e) => {
+        if (e.key === 'Escape') {
+          modal.querySelector('#cancel-btn').click();
+          document.removeEventListener('keydown', handleEsc);
+        }
+      };
+      document.addEventListener('keydown', handleEsc);
+    });
+  };
 }

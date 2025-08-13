@@ -65,7 +65,10 @@ export default function GestionUsuarios() {
     cargarRoles();
   }, []);
 
-  const limpiarFormulario = () => setForm({ id: null, cedula: '', nombre: '', email: '', role: '', active: true });
+  const limpiarFormulario = () => {
+    setForm({ id: null, cedula: '', nombre: '', email: '', role: '', active: true });
+    setError(null);
+  };
 
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -89,10 +92,23 @@ export default function GestionUsuarios() {
       setError('Cédula, nombre y email son obligatorios');
       return;
     }
+    
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email.trim())) {
+      setError('El formato del email no es válido');
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
-      const payload = { cedula: form.cedula.trim(), nombre: form.nombre.trim(), email: form.email.trim(), role: form.role, active: form.active };
+      const payload = { 
+        cedula: form.cedula.trim(), 
+        nombre: form.nombre.trim(), 
+        email: form.email.trim(), 
+        role: form.role || 'USER', 
+        active: form.active 
+      };
       if (form.id) {
         await usuariosAPI.update(form.id, payload);
       } else {
@@ -197,6 +213,14 @@ export default function GestionUsuarios() {
 
         {/* Formulario */}
         <form onSubmit={guardar} className="admin-card">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold text-white">
+              {form.id ? `Editando Usuario: ${form.nombre || form.cedula}` : 'Crear Nuevo Usuario'}
+            </h3>
+            {form.id && (
+              <p className="text-white/60 text-sm mt-1">Modifica los datos del usuario y haz clic en "Actualizar"</p>
+            )}
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
               <label className="block text-sm text-white/70 mb-1">Cédula</label>
@@ -270,13 +294,21 @@ export default function GestionUsuarios() {
             >
               {form.id ? (saving ? 'Actualizando...' : 'Actualizar') : (saving ? 'Creando...' : 'Crear')}
             </button>
-            {form.id && (
+            {form.id ? (
               <button
                 type="button"
                 onClick={limpiarFormulario}
                 className="admin-btn"
               >
                 Cancelar
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={limpiarFormulario}
+                className="admin-btn"
+              >
+                Limpiar
               </button>
             )}
           </div>
@@ -316,7 +348,6 @@ export default function GestionUsuarios() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Cédula/ID</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Nombre</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Email</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Rol</th>
                   <th className="px-4 py-3 text-center text-xs font-medium text-white/60 uppercase tracking-wider">Estado</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-white/60 uppercase tracking-wider">Acciones</th>
                 </tr>
@@ -333,24 +364,6 @@ export default function GestionUsuarios() {
                       <td className="px-4 py-3 text-white/80 text-sm">{id}</td>
                       <td className="px-4 py-3 text-white text-sm font-medium">{nombre}</td>
                       <td className="px-4 py-3 text-white/80 text-sm">{correo}</td>
-                      <td className="px-4 py-3 text-white/80 text-sm">
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded bg-white/10 border border-white/10 text-white/80 text-xs">{rolActual}</span>
-                          <select
-                            disabled={assigningRoleId === id || loadingRoles}
-                            onChange={(e) => asignarRol(u, e.target.value)}
-                            defaultValue=""
-                            className="bg-slate-900/50 text-white/80 border border-white/10 rounded px-2 py-1 text-xs"
-                          >
-                            <option value="" disabled>Cambiar rol</option>
-                            {roles.map((r) => (
-                              <option key={r.id ?? r.codigo ?? r.nombre} value={r.id ?? r.codigo ?? r.nombre}>
-                                {r.nombre ?? r.name ?? r.codigo}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </td>
                       <td className="px-4 py-3 text-center">
                         <span className={`inline-flex px-2 py-1 rounded-full text-xs border ${activo ? 'bg-green-500/10 text-green-300 border-green-500/20' : 'bg-red-500/10 text-red-200 border-red-500/20'}`}>
                           {activo ? 'Activo' : 'Inactivo'}
@@ -360,9 +373,13 @@ export default function GestionUsuarios() {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => editar(u)}
-                            className="px-3 py-1.5 rounded-lg text-white/90 bg-white/10 hover:bg-white/20 text-sm"
+                            className={`px-3 py-1.5 rounded-lg text-sm ${
+                              form.id === (u.id ?? u.cedula) 
+                                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' 
+                                : 'text-white/90 bg-white/10 hover:bg-white/20'
+                            }`}
                           >
-                            Editar
+                            {form.id === (u.id ?? u.cedula) ? 'Editando...' : 'Editar'}
                           </button>
                           <button
                             onClick={() => toggleEstado(u)}
@@ -385,7 +402,7 @@ export default function GestionUsuarios() {
                 })}
                 {(!loading && filtrados.length === 0) && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-white/50 text-sm">
+                    <td colSpan={5} className="px-4 py-8 text-center text-white/50 text-sm">
                       No hay usuarios registrados.
                     </td>
                   </tr>
