@@ -44,15 +44,16 @@ export const authAPI = {
     }
   },
 
-  // Validar token
+  // Validar token JWT
   validateToken: async () => {
     try {
-      const response = await apiRequest.get(API_CONFIG.ENDPOINTS.AUTH.VALIDATE);
+      const response = await apiRequest.post(API_CONFIG.ENDPOINTS.AUTH.VALIDATE_TOKEN);
       return response;
     } catch (error) {
       throw error;
     }
   },
+
 
   // Verificar si el usuario está autenticado
   isAuthenticated: () => {

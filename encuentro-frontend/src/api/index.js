@@ -4,6 +4,7 @@ import { useState } from 'react';
 export { default as authAPI } from './authAPI';
 export { default as eventosAPI } from './eventosAPI';
 export { default as ticketsAPI } from './ticketsAPI';
+export { default as ticketsMetricasAPI } from './ticketsMetricas';
 export { default as usuariosAPI } from './usuariosAPI';
 export { default as notificacionesAPI } from './notificacionesAPI';
 export { default as reportesAPI } from './reportesAPI';

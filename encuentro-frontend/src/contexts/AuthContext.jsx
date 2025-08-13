@@ -10,6 +10,7 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true); // Cambiar a true para cargar estado inicial
   const [userName, setUserName] = useState(null);
+  const [isValidating, setIsValidating] = useState(false);
 
   // Función para verificar si el usuario es admin - más flexible
   const isAdmin = () => {
@@ -17,6 +18,25 @@ export function AuthProvider({ children }) {
     const normalizedRole = userRole.toUpperCase().replace('ROLE_', '').replace('_', '');
     const adminVariations = ['ADMIN', 'ADMINISTRADOR', 'ADMINISTRATOR'];
     return adminVariations.includes(normalizedRole);
+  };
+
+  // Función para auto-logout cuando el token expire o desaparezca
+  const autoLogout = (reason = 'desconocida') => {
+    console.log('🔴 AUTO-LOGOUT EJECUTADO - Razón:', reason);
+    console.trace(); // Esto mostrará el stack trace para ver de dónde viene la llamada
+    
+    setIsAuthenticated(false);
+    setUserRole(null);
+    setUserId(null);
+    setToken(null);
+    setUserName(null);
+    
+    // Limpiar localStorage
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
+    
+    // Redirigir al login (si hay un router context disponible)
+    window.location.href = '/login';
   };
 
   // Verificar token al cargar la aplicación
@@ -37,27 +57,10 @@ export function AuthProvider({ children }) {
             setUserId(userData.cedula || userData.id || userData.userId);
             setUserName(userData.nombre || userData.name || userData.username || 'Usuario');
             
-            // Opcional: Validar token con el backend en segundo plano
-            try {
-              const response = await authAPI.validateToken();
-              if (!response.data || !response.data.valid) {
-                console.info('Token validation: Token inválido detectado, manteniendo sesión local');
-                // No cerrar sesión inmediatamente, dar al usuario la oportunidad de renovar
-              } else {
-                console.info('Token validation: Token válido confirmado por el backend');
-              }
-            } catch (error) {
-              // Solo mostrar warning si no es un error 403 (que es común cuando el endpoint no está implementado)
-              if (error.response?.status === 403) {
-                console.info('Token validation: Endpoint de validación no disponible (403), manteniendo sesión local');
-              } else {
-                console.warn('Token validation: Error al validar token con el backend:', error.message);
-              }
-              // No cerrar sesión por errores de red, mantener sesión local
-            }
+            // Token restaurado desde localStorage - sesión local válida
+            console.log('Sesión restaurada desde localStorage');
             
           } catch (parseError) {
-            console.error('Error al parsear datos de usuario:', parseError);
             // Si hay error parseando, limpiar y empezar de nuevo
             localStorage.removeItem('authToken');
             localStorage.removeItem('userData');
@@ -72,6 +75,85 @@ export function AuthProvider({ children }) {
 
     initializeAuth();
   }, []);
+
+  // COMENTADO: Monitorear cambios en localStorage
+  // useEffect(() => {
+  //   const handleStorageChange = (e) => {
+  //     if (e.key === 'authToken' && e.newValue === null && isAuthenticated) {
+  //       console.log('Token eliminado desde otra pestaña');
+  //       autoLogout('storage-change');
+  //     }
+  //   };
+
+  //   window.addEventListener('storage', handleStorageChange);
+  //   return () => window.removeEventListener('storage', handleStorageChange);
+  // }, [isAuthenticated]);
+
+  // Validar token con el servidor
+  const validateTokenWithServer = async () => {
+    if (isValidating) {
+      console.log('Validación ya en curso, saltando...');
+      return;
+    }
+
+    setIsValidating(true);
+    const currentToken = localStorage.getItem('authToken');
+    
+    if (!currentToken) {
+      console.log('No hay token - auto logout');
+      autoLogout();
+      setIsValidating(false);
+      return;
+    }
+
+    try {
+      console.log('Validando token con servidor...');
+      await authAPI.validateToken();
+      console.log('✅ Token válido - sesión mantenida');
+    } catch (error) {
+      console.log('❌ Token inválido o expirado - auto logout', error);
+      autoLogout();
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  // COMENTADO: Verificación periódica automática deshabilitada
+  // useEffect(() => {
+  //   let intervalId;
+    
+  //   if (isAuthenticated && !isLoading) {
+  //     console.log('🔄 Iniciando validación periódica del token');
+      
+  //     // Primera validación después de 10 segundos
+  //     const initialTimeout = setTimeout(() => {
+  //       validateTokenWithServer();
+        
+  //       // Después configurar validaciones cada 2 minutos
+  //       intervalId = setInterval(validateTokenWithServer, 120000);
+  //     }, 10000);
+
+  //     return () => {
+  //       clearTimeout(initialTimeout);
+  //       if (intervalId) {
+  //         clearInterval(intervalId);
+  //       }
+  //     };
+  //   }
+  // }, [isAuthenticated, isLoading]);
+
+  // COMENTADO: Escuchar evento de token expirado desde httpClient
+  // useEffect(() => {
+  //   const handleTokenExpired = () => {
+  //     if (isAuthenticated) {
+  //       console.log('Evento tokenExpired recibido');
+  //       autoLogout('token-expired-event');
+  //     }
+  //   };
+
+  //   window.addEventListener('tokenExpired', handleTokenExpired);
+  //   return () => window.removeEventListener('tokenExpired', handleTokenExpired);
+  // }, [isAuthenticated]);
 
   const login = (role, id, token, name) => {
     setIsAuthenticated(true);
@@ -119,11 +201,9 @@ export function AuthProvider({ children }) {
   const register = async (userData) => {
     try {
       console.log('Registering user:', userData);
-      // Aquí puedes agregar la lógica para registrar al usuario, como llamar a una API
-      // Por ejemplo:
-      // const response = await api.register(userData);
-      // return response;
-      return { success: true, message: 'User registered successfully' };
+      const response = await authAPI.register(userData);
+      console.log('Registration response:', response);
+      return response;
     } catch (error) {
       console.error('Error in register function:', error);
       throw error;
@@ -172,12 +252,14 @@ export function AuthProvider({ children }) {
         token,
         isLoading,
         userName,
+        isValidating,
         isAdmin: isAdmin(), // Llamar la función
         user: { cedula: userId, nombre: userName, role: userRole }, // Objeto user para compatibilidad
         login,
         logout,
         register,
         hasRole,
+        validateTokenWithServer, // Exponer función para validación manual
       }}
     >
       {children}
