@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-<<<<<<< HEAD
+
 import { reportesAPI, usuariosAPI, eventosAPI, notificacionesAPI } from '../api';
 import { UserForm, EventForm } from '../components/forms';
 import CitiesManager from '../components/admin/CitiesManager';
-=======
+
 import { reportesAPI, usuariosAPI, eventosAPI, notificacionesAPI, ticketsMetricasAPI } from '../api';
->>>>>>> origin/gio
+
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
@@ -307,10 +307,10 @@ export default function AdminDashboard() {
 
   // Quick actions
   const handleCrearEvento = async () => {
-<<<<<<< HEAD
+
     setActiveSection('events');
     setShowEventForm(true);
-=======
+
     // Solicitar datos mínimos por prompts para cumplir con la llamada al endpoint
     const nombre = window.prompt('Nombre del evento:');
     if (!nombre) return;
@@ -333,7 +333,6 @@ export default function AdminDashboard() {
       console.log('❌ Error creando evento:', err);
       alert('❌ Error al crear evento: ' + (err?.message || err?.data?.message || 'Error desconocido'));
     }
->>>>>>> origin/gio
   };
 
   const handleGenerarReporteDescarga = async () => {

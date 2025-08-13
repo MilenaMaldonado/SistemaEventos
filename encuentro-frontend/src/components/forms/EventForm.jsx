@@ -4,16 +4,14 @@ import eventosAPI from '../../api/eventosAPI';
 export default function EventForm({ event = null, onSubmit, onCancel, loading = false }) {
   const [formData, setFormData] = useState({
     nombre: '',
-    descripcion: '',
     fecha: '',
     hora: '',
-    ciudad: '',
-    direccion: '',
+    idCiudad: '',
+    establecimiento: '',
     capacidad: '',
     precio: '',
     categoria: '',
-    imagen: '',
-    activo: true
+    imagenUrl: ''
   });
 
   const [ciudades, setCiudades] = useState([]);
@@ -28,16 +26,14 @@ export default function EventForm({ event = null, onSubmit, onCancel, loading = 
     if (event) {
       setFormData({
         nombre: event.nombre || event.titulo || '',
-        descripcion: event.descripcion || '',
         fecha: event.fecha ? event.fecha.split('T')[0] : '',
-        hora: event.hora || event.fecha ? event.fecha.split('T')[1]?.substring(0, 5) : '',
-        ciudad: event.ciudad || event.lugar || '',
-        direccion: event.direccion || '',
+        hora: event.hora || (event.fecha ? event.fecha.split('T')[1]?.substring(0, 5) : ''),
+        idCiudad: event.idCiudad || event.ciudad?.id || '',
+        establecimiento: event.establecimiento || event.lugar || '',
         capacidad: event.capacidad || event.cupos || '',
         precio: event.precio || '',
         categoria: event.categoria || '',
-        imagen: event.imagen || '',
-        activo: event.activo !== undefined ? event.activo : true
+        imagenUrl: event.imagenUrl || event.imagen || ''
       });
     }
   }, [event]);
@@ -60,7 +56,10 @@ export default function EventForm({ event = null, onSubmit, onCancel, loading = 
     
     if (!formData.nombre.trim()) newErrors.nombre = 'El nombre del evento es requerido';
     if (!formData.fecha) newErrors.fecha = 'La fecha es requerida';
-    if (!formData.ciudad) newErrors.ciudad = 'La ciudad es requerida';
+    if (!formData.hora) newErrors.hora = 'La hora es requerida';
+    if (!formData.idCiudad) newErrors.idCiudad = 'La ciudad es requerida';
+    if (!formData.establecimiento?.trim()) newErrors.establecimiento = 'El establecimiento es requerido';
+    if (!formData.imagenUrl?.trim()) newErrors.imagenUrl = 'La URL de la imagen es requerida';
     if (!formData.capacidad || parseInt(formData.capacidad) <= 0) newErrors.capacidad = 'La capacidad debe ser mayor a 0';
     if (formData.precio && parseFloat(formData.precio) < 0) newErrors.precio = 'El precio no puede ser negativo';
     
@@ -81,17 +80,17 @@ export default function EventForm({ event = null, onSubmit, onCancel, loading = 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
-      // Combinar fecha y hora si ambos están presentes
-      let fechaCompleta = formData.fecha;
-      if (formData.hora) {
-        fechaCompleta = `${formData.fecha}T${formData.hora}:00`;
-      }
-      
       const eventData = {
-        ...formData,
-        fecha: fechaCompleta
+        nombre: formData.nombre.trim(),
+        fecha: formData.fecha,
+        hora: formData.hora,
+        idCiudad: formData.idCiudad ? Number(formData.idCiudad) : undefined,
+        establecimiento: formData.establecimiento.trim(),
+        capacidad: formData.capacidad ? parseInt(formData.capacidad, 10) : undefined,
+        precio: formData.precio !== '' ? parseFloat(formData.precio) : undefined,
+        categoria: formData.categoria || undefined,
+        imagenUrl: formData.imagenUrl.trim()
       };
-      
       onSubmit(eventData);
     }
   };
@@ -116,8 +115,7 @@ export default function EventForm({ event = null, onSubmit, onCancel, loading = 
     try {
       await eventosAPI.createCiudad({ nombre: nombreCiudad.trim() });
       await loadCiudades();
-      setFormData(prev => ({ ...prev, ciudad: nombreCiudad.trim() }));
-      alert('Ciudad creada exitosamente');
+      alert('Ciudad creada exitosamente. Selecciónala en el listado.');
     } catch (error) {
       console.error('Error al crear ciudad:', error);
       alert('Error al crear ciudad: ' + (error?.message || 'Error desconocido'));
@@ -185,20 +183,21 @@ export default function EventForm({ event = null, onSubmit, onCancel, loading = 
               onChange={handleChange}
               className="w-full bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-white"
             />
+            {errors.hora && <span className="text-red-400 text-xs">{errors.hora}</span>}
           </div>
 
           <div>
             <label className="block text-white/70 text-sm mb-1">Ciudad *</label>
             <div className="flex space-x-2">
               <select
-                name="ciudad"
-                value={formData.ciudad}
+                name="idCiudad"
+                value={formData.idCiudad}
                 onChange={handleChange}
-                className={`flex-1 bg-white/10 border ${errors.ciudad ? 'border-red-400' : 'border-white/10'} rounded-lg px-3 py-2 text-white`}
+                className={`flex-1 bg-white/10 border ${errors.idCiudad ? 'border-red-400' : 'border-white/10'} rounded-lg px-3 py-2 text-white`}
               >
                 <option value="">Seleccione una ciudad</option>
                 {ciudades.map((ciudad) => (
-                  <option key={ciudad.id || ciudad.nombre} value={ciudad.nombre}>
+                  <option key={ciudad.id || ciudad._id || ciudad.nombre} value={ciudad.id || ciudad._id || ''}>
                     {ciudad.nombre}
                   </option>
                 ))}
@@ -212,7 +211,7 @@ export default function EventForm({ event = null, onSubmit, onCancel, loading = 
                 +
               </button>
             </div>
-            {errors.ciudad && <span className="text-red-400 text-xs">{errors.ciudad}</span>}
+            {errors.idCiudad && <span className="text-red-400 text-xs">{errors.idCiudad}</span>}
             {loadingCiudades && <span className="text-white/50 text-xs">Cargando ciudades...</span>}
           </div>
 
@@ -246,56 +245,32 @@ export default function EventForm({ event = null, onSubmit, onCancel, loading = 
           </div>
 
           <div>
-            <label className="block text-white/70 text-sm mb-1">Estado</label>
-            <div className="flex items-center space-x-3">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="activo"
-                  checked={formData.activo}
-                  onChange={handleChange}
-                  className="w-4 h-4 text-cyan-500 bg-white/10 border-white/10 rounded focus:ring-cyan-500"
-                />
-                <span className="ml-2 text-white/70">Evento Activo</span>
-              </label>
-            </div>
+            <label className="block text-white/70 text-sm mb-1">Establecimiento *</label>
+            <input
+              type="text"
+              name="establecimiento"
+              value={formData.establecimiento}
+              onChange={handleChange}
+              className="w-full bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-white/30"
+              placeholder="Ej. Coliseo Rumiñahui"
+            />
+            {errors.establecimiento && <span className="text-red-400 text-xs">{errors.establecimiento}</span>}
           </div>
         </div>
 
-        <div>
-          <label className="block text-white/70 text-sm mb-1">Dirección</label>
-          <input
-            type="text"
-            name="direccion"
-            value={formData.direccion}
-            onChange={handleChange}
-            className="w-full bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-white/30"
-            placeholder="Dirección específica del evento"
-          />
-        </div>
-
-        <div>
-          <label className="block text-white/70 text-sm mb-1">Descripción</label>
-          <textarea
-            name="descripcion"
-            value={formData.descripcion}
-            onChange={handleChange}
-            rows="4"
-            className="w-full bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-white/30"
-            placeholder="Descripción detallada del evento"
-          />
-        </div>
-
+        
+        
         <div>
           <label className="block text-white/70 text-sm mb-1">URL de Imagen</label>
           <input
             type="url"
-            name="imagen"
-            value={formData.imagen}
+            name="imagenUrl"
+            value={formData.imagenUrl}
             onChange={handleChange}
             className="w-full bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-white/30"
             placeholder="https://ejemplo.com/imagen.jpg"
           />
+          {errors.imagenUrl && <span className="text-red-400 text-xs">{errors.imagenUrl}</span>}
         </div>
 
         <div className="flex justify-end space-x-3 pt-4">

@@ -21,14 +21,13 @@ export default function GestionEventos() {
   const [form, setForm] = useState({
     id: null,
     nombre: '',
-    descripcion: '',
-    categoria: '',
     fecha: '', // yyyy-mm-dd
     hora: '',  // HH:mm
-    ciudadId: '',
-    lugar: '',
+    idCiudad: '',
+    establecimiento: '',
     capacidad: '',
     precio: '',
+    imagenUrl: '',
   });
 
   const cargarEventos = async () => {
@@ -70,14 +69,13 @@ export default function GestionEventos() {
     setForm({
       id: null,
       nombre: '',
-      descripcion: '',
-      categoria: '',
       fecha: '',
       hora: '',
-      ciudadId: '',
-      lugar: '',
+      idCiudad: '',
+      establecimiento: '',
       capacidad: '',
       precio: '',
+      imagenUrl: '',
     });
     setError(null);
   };
@@ -106,36 +104,34 @@ export default function GestionEventos() {
     setForm({
       id,
       nombre: ev.nombre ?? ev.titulo ?? '',
-      descripcion: ev.descripcion ?? '',
-      categoria: ev.categoria ?? '',
       fecha: fecha,
       hora: hora,
-      ciudadId: ev.ciudadId ?? ev.ciudad?.id ?? '',
-      lugar: ev.lugar ?? '',
+      idCiudad: ev.idCiudad ?? ev.ciudad?.id ?? '',
+      establecimiento: ev.establecimiento ?? ev.lugar ?? '',
       capacidad: ev.capacidad ?? ev.aforo ?? '',
       precio: ev.precio ?? ev.precioBase ?? '',
+      imagenUrl: ev.imagenUrl ?? ev.imagen ?? '',
     });
   };
 
   const construirPayload = () => {
-    const fechaHora = form.fecha && form.hora ? `${form.fecha}T${form.hora}:00` : (form.fecha || null);
     const payload = {
       nombre: form.nombre?.trim() || undefined,
-      descripcion: form.descripcion?.trim() || undefined,
-      categoria: form.categoria?.trim() || undefined,
-      fecha: fechaHora,
-      ciudadId: form.ciudadId || undefined,
-      lugar: form.lugar?.trim() || undefined,
+      fecha: form.fecha || undefined,
+      hora: form.hora || undefined,
+      idCiudad: form.idCiudad !== '' ? Number(form.idCiudad) : undefined,
+      establecimiento: form.establecimiento?.trim() || undefined,
       capacidad: form.capacidad !== '' ? parseInt(form.capacidad, 10) : undefined,
       precio: form.precio !== '' ? parseFloat(form.precio) : undefined,
+      imagenUrl: form.imagenUrl?.trim() || undefined,
     };
     return payload;
   };
 
   const guardar = async (e) => {
     e.preventDefault();
-    if (!form.nombre?.trim() || !form.fecha || !form.ciudadId) {
-      setError('Nombre, fecha y ciudad son obligatorios');
+    if (!form.nombre?.trim() || !form.fecha || !form.hora || !form.idCiudad || !form.establecimiento?.trim() || !form.imagenUrl?.trim()) {
+      setError('Nombre, fecha, hora, ciudad, establecimiento e imagen son obligatorios');
       return;
     }
     
@@ -187,7 +183,7 @@ export default function GestionEventos() {
     const q = busqueda.trim().toLowerCase();
     if (!q) return eventos;
     return eventos.filter((e) =>
-      [e.nombre, e.titulo, e.descripcion, e.categoria, e.lugar, e.ciudad?.nombre]
+      [e.nombre, e.establecimiento, e.ciudad?.nombre]
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(q))
     );
@@ -245,28 +241,17 @@ export default function GestionEventos() {
               />
             </div>
             <div className="md:col-span-3">
-              <label className="block text-sm text-white/70 mb-1">Categoría</label>
+              <label className="block text-sm text-white/70 mb-1">Establecimiento</label>
               <input
                 type="text"
-                name="categoria"
-                value={form.categoria}
+                name="establecimiento"
+                value={form.establecimiento}
                 onChange={onChange}
-                placeholder="Ej. Música"
+                placeholder="Ej. Coliseo Rumiñahui"
                 className="admin-input w-full"
               />
             </div>
-            <div className="md:col-span-4">
-              <label className="block text-sm text-white/70 mb-1">Descripción</label>
-              <textarea
-                name="descripcion"
-                value={form.descripcion}
-                onChange={onChange}
-                rows={3}
-                placeholder="Detalles del evento"
-                className="admin-textarea w-full"
-              />
-            </div>
-            <div>
+                        <div>
               <label className="block text-sm text-white/70 mb-1">Fecha</label>
               <input
                 type="date"
@@ -289,8 +274,8 @@ export default function GestionEventos() {
             <div className="md:col-span-2">
               <label className="block text-sm text-white/70 mb-1">Ciudad</label>
               <select
-                name="ciudadId"
-                value={form.ciudadId}
+                name="idCiudad"
+                value={form.idCiudad}
                 onChange={onChange}
                 className="admin-select w-full"
               >
@@ -303,13 +288,13 @@ export default function GestionEventos() {
               </select>
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm text-white/70 mb-1">Lugar</label>
+              <label className="block text-sm text-white/70 mb-1">URL Imagen</label>
               <input
-                type="text"
-                name="lugar"
-                value={form.lugar}
+                type="url"
+                name="imagenUrl"
+                value={form.imagenUrl}
                 onChange={onChange}
-                placeholder="Ej. Coliseo Rumiñahui"
+                placeholder="https://ejemplo.com/imagen.jpg"
                 className="admin-input w-full"
               />
             </div>
@@ -396,6 +381,7 @@ export default function GestionEventos() {
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">ID</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Nombre</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Establecimiento</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Fecha</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Ciudad</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-white/60 uppercase tracking-wider">Capacidad</th>
@@ -406,6 +392,7 @@ export default function GestionEventos() {
                 {filtrados.map((ev) => {
                   const id = ev.id ?? ev.codigo ?? ev._id ?? '-';
                   const nombre = ev.nombre ?? ev.titulo ?? '-';
+                  const establecimiento = ev.establecimiento ?? ev.lugar ?? '-';
                   const fechaMostrar = (() => {
                     const f = ev.fecha || ev.fechaEvento || ev.inicio;
                     try {
@@ -418,6 +405,7 @@ export default function GestionEventos() {
                     <tr key={id} className="hover:bg-white/5">
                       <td className="px-4 py-3 text-white/80 text-sm">{id}</td>
                       <td className="px-4 py-3 text-white text-sm font-medium">{nombre}</td>
+                      <td className="px-4 py-3 text-white/80 text-sm">{establecimiento}</td>
                       <td className="px-4 py-3 text-white/80 text-sm">{fechaMostrar}</td>
                       <td className="px-4 py-3 text-white/80 text-sm">{ciudadNombre}</td>
                       <td className="px-4 py-3 text-white/80 text-sm">{capacidad}</td>
@@ -447,7 +435,7 @@ export default function GestionEventos() {
                 })}
                 {(!loading && filtrados.length === 0) && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-white/50 text-sm">
+                    <td colSpan={7} className="px-4 py-8 text-center text-white/50 text-sm">
                       No hay eventos registrados.
                     </td>
                   </tr>
